@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <functional>
 #include <vector>
+#include <string>
 
 class HelloTriangleApplication
 {
@@ -36,6 +37,7 @@ private:
   void pickPhysicalDevice();
   bool isDeviceSuitable(vk::PhysicalDevice device);
   QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device);
+  void createLogicalDevice();
 
   void mainLoop();
 
@@ -49,6 +51,8 @@ private:
   vk::Instance instance;
   vk::DebugReportCallbackEXT callback;
   vk::PhysicalDevice physicalDevice;
+  vk::Device device;
+  vk::Queue graphicsQueue;
 
   const std::vector<const char*> validationLayers = 
   {
@@ -76,4 +80,8 @@ private:
     std::cerr << "Validation Layer: " << layerPrefix << " Message: " << msg << std::endl;
     return VK_FALSE;
   }
+
+  // Graphics card stuff
+  std::string graphicsCardName;
+  uint64_t graphicsCardMemory;
 };

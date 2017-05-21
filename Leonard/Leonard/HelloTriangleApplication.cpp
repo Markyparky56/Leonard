@@ -23,6 +23,7 @@ void HelloTriangleApplication::initVulkan()
   createInstance();
   setupDebugCallback();
   pickPhysicalDevice();
+  createLogicalDevice();
 }
 
 bool HelloTriangleApplication::checkValidationLayerSupport()
@@ -196,7 +197,7 @@ void HelloTriangleApplication::pickPhysicalDevice()
     }
   }
 
-  if (physicalDevice == VK_NULL_HANDLE)
+  if (!physicalDevice)
   {
     throw std::runtime_error("Failed to find a suitable GPU!");
   }
@@ -206,11 +207,21 @@ bool HelloTriangleApplication::isDeviceSuitable(vk::PhysicalDevice device)
 {
   vk::PhysicalDeviceProperties deviceProperties;
   vk::PhysicalDeviceFeatures deviceFeatures;
+  vk::PhysicalDeviceMemoryProperties deviceMemoryProperties;
   deviceProperties = device.getProperties();
   deviceFeatures = device.getFeatures();
+  deviceMemoryProperties = device.getMemoryProperties();
 
   // Whatever requirement checks can go here
   QueueFamilyIndices indices = findQueueFamilies(device);
+
+  if (indices.isComplete())
+  {
+    graphicsCardName = deviceProperties.deviceName;
+    graphicsCardMemory = static_cast<uint64_t>(deviceMemoryProperties.memoryHeaps[0].size)/1024/1024; // MiB
+    std::cout << "Using Physical Device " << graphicsCardName 
+              << " with " << graphicsCardMemory << " MiB VRAM" << std::endl;
+  }
 
   return indices.isComplete();
 }
@@ -240,6 +251,42 @@ HelloTriangleApplication::QueueFamilyIndices HelloTriangleApplication::findQueue
   return indices;
 }
 
+void HelloTriangleApplication::createLogicalDevice()
+{
+  QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+  float queuePriority = 1.f;
+
+  vk::DeviceQueueCreateInfo queueCreateInfo;
+  queueCreateInfo.setQueueFamilyIndex(indices.graphicsFamily)
+                 .setQueueCount(1)
+                 .setPQueuePriorities(&queuePriority);
+
+  vk::PhysicalDeviceFeatures deviceFeatures;
+  
+  vk::DeviceCreateInfo createInfo;
+  createInfo.setPQueueCreateInfos(&queueCreateInfo)
+            .setQueueCreateInfoCount(1)
+            .setPEnabledFeatures(&deviceFeatures)
+            .setEnabledExtensionCount(0);
+
+  if (enableValidationLayers)
+  {
+    createInfo.setEnabledLayerCount(static_cast<uint32_t>(validationLayers.size()))
+              .setPpEnabledLayerNames(validationLayers.data());
+  }
+  else
+  {
+    createInfo.setEnabledLayerCount(0);
+  }
+
+  if (physicalDevice.createDevice(&createInfo, nullptr, &device) != vk::Result::eSuccess)
+  {
+    throw std::runtime_error("Failed to create logical device!");
+  }
+
+  device.getQueue(indices.graphicsFamily, 0, &graphicsQueue);
+}
+
 void HelloTriangleApplication::mainLoop()
 {
   while (!glfwWindowShouldClose(window))
@@ -250,6 +297,7 @@ void HelloTriangleApplication::mainLoop()
 
 void HelloTriangleApplication::cleanup()
 {
+  device.destroy();
   removeDebugCallback();
   instance.destroy();
 
