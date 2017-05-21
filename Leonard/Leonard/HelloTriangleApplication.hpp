@@ -10,6 +10,16 @@
 
 class HelloTriangleApplication
 {
+  struct QueueFamilyIndices
+  {
+    int graphicsFamily = -1;
+
+    bool isComplete()
+    {
+      return graphicsFamily >= 0;
+    }
+  };
+
 public:
   void run();
 
@@ -23,6 +33,9 @@ private:
   void createInstance();
   void setupDebugCallback();
   void removeDebugCallback();
+  void pickPhysicalDevice();
+  bool isDeviceSuitable(vk::PhysicalDevice device);
+  QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device);
 
   void mainLoop();
 
@@ -35,6 +48,7 @@ private:
   // Vulkan stuff
   vk::Instance instance;
   vk::DebugReportCallbackEXT callback;
+  vk::PhysicalDevice physicalDevice;
 
   const std::vector<const char*> validationLayers = 
   {
@@ -45,6 +59,7 @@ private:
 #else
   const bool enableValidationLayers = true;
 #endif
+
 
   // This callback is the closest to the C-API this program gets, because even the C++-API still falls back on
   // the C-API's typedefs for function pointers.
@@ -58,7 +73,7 @@ private:
     , const char *msg
     , void *userData)
   {
-    std::cerr << "Validation Layer: " << msg << std::endl;
+    std::cerr << "Validation Layer: " << layerPrefix << " Message: " << msg << std::endl;
     return VK_FALSE;
   }
 };

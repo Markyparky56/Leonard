@@ -22,6 +22,7 @@ void HelloTriangleApplication::initVulkan()
 {
   createInstance();
   setupDebugCallback();
+  pickPhysicalDevice();
 }
 
 bool HelloTriangleApplication::checkValidationLayerSupport()
@@ -120,32 +121,25 @@ void HelloTriangleApplication::createInstance()
          .setPEngineName("No Engine")
          .setEngineVersion(VK_MAKE_VERSION(1, 0, 0))
          .setApiVersion(VK_API_VERSION_1_0);
-  //appInfo.pApplicationName = "Hello Triangle";
-  //appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-  //appInfo.pEngineName = "No Engine"; // Soon tm
-  //appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-  //appInfo.apiVersion = VK_API_VERSION_1_0;
 
 #ifdef _DEBUG
   listAvailableExtensions();
 #endif
 
   vk::InstanceCreateInfo createInfo;
-  createInfo.pApplicationInfo = &appInfo;
-
   auto extensions = getRequiredExtensions();
-
-  createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-  createInfo.ppEnabledExtensionNames = extensions.data();
+  createInfo.setPApplicationInfo(&appInfo)
+            .setEnabledExtensionCount(static_cast<uint32_t>(extensions.size()))
+            .setPpEnabledExtensionNames(extensions.data());
 
   if (enableValidationLayers)
   {
-    createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-    createInfo.ppEnabledLayerNames = validationLayers.data();
+    createInfo.setEnabledLayerCount(static_cast<uint32_t>(validationLayers.size()))
+              .setPpEnabledLayerNames(validationLayers.data());
   }
   else
   {
-    createInfo.enabledLayerCount = 0;
+    createInfo.setEnabledLayerCount(0);
   }
 
   vk::Result result = vk::createInstance(&createInfo, nullptr, &instance);
@@ -178,6 +172,72 @@ void HelloTriangleApplication::removeDebugCallback()
   if (!enableValidationLayers) return;
 
   instance.destroyDebugReportCallbackEXT(callback);
+}
+
+void HelloTriangleApplication::pickPhysicalDevice()
+{
+  uint32_t deviceCount;
+  instance.enumeratePhysicalDevices(&deviceCount, nullptr);
+  
+  if (deviceCount == 0)
+  {
+    throw std::runtime_error("Failed to find GPUs with Vulkan support!");
+  }
+
+  std::vector<vk::PhysicalDevice> devices(deviceCount);
+  instance.enumeratePhysicalDevices(&deviceCount, devices.data());
+
+  for (const auto& device : devices)
+  {
+    if (isDeviceSuitable(device))
+    {
+      physicalDevice = device;
+      break;
+    }
+  }
+
+  if (physicalDevice == VK_NULL_HANDLE)
+  {
+    throw std::runtime_error("Failed to find a suitable GPU!");
+  }
+}
+
+bool HelloTriangleApplication::isDeviceSuitable(vk::PhysicalDevice device)
+{
+  vk::PhysicalDeviceProperties deviceProperties;
+  vk::PhysicalDeviceFeatures deviceFeatures;
+  deviceProperties = device.getProperties();
+  deviceFeatures = device.getFeatures();
+
+  // Whatever requirement checks can go here
+  QueueFamilyIndices indices = findQueueFamilies(device);
+
+  return indices.isComplete();
+}
+
+HelloTriangleApplication::QueueFamilyIndices HelloTriangleApplication::findQueueFamilies(vk::PhysicalDevice device)
+{
+  QueueFamilyIndices indices;  
+
+  std::vector<vk::QueueFamilyProperties> queueFamilies = device.getQueueFamilyProperties();
+
+  int i = 0;
+  for (const auto &queueFamily : queueFamilies)
+  {
+    if (queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eGraphics)
+    {
+      indices.graphicsFamily = i;
+    }
+
+    if (indices.isComplete())
+    {
+      break;
+    }
+    i++;
+  }
+
+
+  return indices;
 }
 
 void HelloTriangleApplication::mainLoop()
