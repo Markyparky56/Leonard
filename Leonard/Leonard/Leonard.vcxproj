@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\Vulkan-Docs\src\ext_loader\vulkan_ext.c" />
     <ClCompile Include="HelloTriangleApplication.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -110,7 +111,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>N:\VulkanWork\glm;N:\VulkanWork\glfw-3.2.1.bin.WIN64\include;C:\VulkanSDK\1.0.49.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>N:\VulkanWork\glm;N:\VulkanWork\glfw-3.2.1.bin.WIN64\include;C:\VulkanSDK\1.0.49.0\Include;N:\VulkanWork\Vulkan-Docs\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
