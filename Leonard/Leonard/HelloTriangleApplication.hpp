@@ -8,16 +8,18 @@
 #include <functional>
 #include <vector>
 #include <string>
+#include <set>
 
 class HelloTriangleApplication
 {
   struct QueueFamilyIndices
   {
     int graphicsFamily = -1;
+    int presentFamily = -1;
 
     bool isComplete()
     {
-      return graphicsFamily >= 0;
+      return graphicsFamily >= 0 && presentFamily >= 0;
     }
   };
 
@@ -38,6 +40,7 @@ private:
   bool isDeviceSuitable(vk::PhysicalDevice device);
   QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device);
   void createLogicalDevice();
+  void createSurface();
 
   void mainLoop();
 
@@ -53,6 +56,8 @@ private:
   vk::PhysicalDevice physicalDevice;
   vk::Device device;
   vk::Queue graphicsQueue;
+  vk::SurfaceKHR surface;
+  vk::Queue presentQueue;
 
   const std::vector<const char*> validationLayers = 
   {
