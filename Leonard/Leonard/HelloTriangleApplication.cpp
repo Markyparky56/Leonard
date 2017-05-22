@@ -22,6 +22,7 @@ void HelloTriangleApplication::initVulkan()
 {
   createInstance();
   setupDebugCallback();
+  createSurface();
   pickPhysicalDevice();
   createLogicalDevice();
 }
