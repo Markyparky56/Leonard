@@ -216,7 +216,11 @@ bool HelloTriangleApplication::isDeviceSuitable(vk::PhysicalDevice device)
   // Whatever requirement checks can go here
   QueueFamilyIndices indices = findQueueFamilies(device);
 
-  if (indices.isComplete())
+  bool extensionsSupported = checkDeviceExtensionSupport(device);
+
+  bool complete = indices.isComplete() && extensionsSupported;
+
+  if (complete)
   {
     graphicsCardName = deviceProperties.deviceName;
     graphicsCardMemory = static_cast<uint64_t>(deviceMemoryProperties.memoryHeaps[0].size)/1024/1024; // MiB
@@ -224,7 +228,22 @@ bool HelloTriangleApplication::isDeviceSuitable(vk::PhysicalDevice device)
               << " with " << graphicsCardMemory << " MiB VRAM" << std::endl;
   }
 
-  return indices.isComplete();
+  return complete;
+}
+
+bool HelloTriangleApplication::checkDeviceExtensionSupport(vk::PhysicalDevice device)
+{
+  std::vector<vk::ExtensionProperties> availableExtensions;
+  availableExtensions = device.enumerateDeviceExtensionProperties();
+
+  std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+
+  for (const auto &extensions : availableExtensions)
+  {
+    requiredExtensions.erase(extensions.extensionName);
+  }
+
+  return requiredExtensions.empty();
 }
 
 HelloTriangleApplication::QueueFamilyIndices HelloTriangleApplication::findQueueFamilies(vk::PhysicalDevice device)
@@ -288,7 +307,8 @@ void HelloTriangleApplication::createLogicalDevice()
   createInfo.setPQueueCreateInfos(queueCreateInfos.data())
             .setQueueCreateInfoCount(static_cast<uint32_t>(queueCreateInfos.size()))
             .setPEnabledFeatures(&deviceFeatures)
-            .setEnabledExtensionCount(0);
+            .setEnabledExtensionCount(static_cast<uint32_t>(deviceExtensions.size()))
+            .setPpEnabledExtensionNames(deviceExtensions.data());
 
   if (enableValidationLayers)
   {
