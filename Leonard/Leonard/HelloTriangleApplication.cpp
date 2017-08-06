@@ -27,6 +27,7 @@ void HelloTriangleApplication::initVulkan()
   createLogicalDevice();
   createSwapChain();
   createImageViews();
+  createGraphicsPipeline();
 }
 
 bool HelloTriangleApplication::checkValidationLayerSupport()
@@ -496,6 +497,11 @@ void HelloTriangleApplication::createImageViews()
       throw std::runtime_error("Failed to create image views!");
     }
   }
+}
+
+void HelloTriangleApplication::createGraphicsPipeline()
+{
+
 }
 
 void HelloTriangleApplication::mainLoop()

@@ -26,6 +26,11 @@
   <ItemGroup>
     <ClInclude Include="HelloTriangleApplication.hpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\CompileTriangleShaders.bat" />
+    <None Include="shaders\triangle.frag" />
+    <None Include="shaders\triangle.vert" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{826117e1-d426-490e-afa3-e90b824649b1}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
