@@ -9,6 +9,7 @@
 #include <vector>
 #include <string>
 #include <set>
+#include <algorithm>
 
 class HelloTriangleApplication
 {
@@ -21,6 +22,13 @@ class HelloTriangleApplication
     {
       return graphicsFamily >= 0 && presentFamily >= 0;
     }
+  };
+
+  struct SwapChainSupportDetails
+  {
+    vk::SurfaceCapabilitiesKHR capabilities;
+    std::vector<vk::SurfaceFormatKHR> formats;
+    std::vector<vk::PresentModeKHR> presentModes;
   };
 
 public:
@@ -42,13 +50,19 @@ private:
   void createLogicalDevice();
   void createSurface();
   bool checkDeviceExtensionSupport(vk::PhysicalDevice device);
+  SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice device);
+  vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &availableFormats);
+  vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR> &availablePresentModes);
+  vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities);
+  void createSwapChain();
+  void createImageViews();
 
   void mainLoop();
 
   void cleanup();
 
   // GLFW stuff
-  const int WindowWidth = 800, WindowHeight = 600;
+  const uint32_t WindowWidth = 800, WindowHeight = 600;
   GLFWwindow *window;
 
   // Vulkan stuff
@@ -59,6 +73,11 @@ private:
   vk::Queue graphicsQueue;
   vk::SurfaceKHR surface;
   vk::Queue presentQueue;
+  vk::SwapchainKHR swapChain;
+  std::vector<vk::Image> swapChainImages;
+  vk::Format swapChainImageFormat;
+  vk::Extent2D swapChainExtent;
+  std::vector<vk::ImageView> swapChainImageViews;
 
   const std::vector<const char*> validationLayers = 
   {
