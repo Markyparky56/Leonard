@@ -40,5 +40,8 @@
     <None Include="shaders\triangle.vert">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="shaders\CompileTriangleShaders_glslc.bat">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

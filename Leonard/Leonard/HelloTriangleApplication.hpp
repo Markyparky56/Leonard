@@ -10,6 +10,27 @@
 #include <string>
 #include <set>
 #include <algorithm>
+#include <fstream>
+
+static std::vector<char> readBinaryFile(const std::string &filename)
+{
+  std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+  if (!file.is_open())
+  {
+    throw std::runtime_error("Failed to open file!");
+  }
+
+  size_t fileSize = static_cast<size_t>(file.tellg());
+  std::vector<char> buffer(fileSize);
+
+  file.seekg(0);
+  file.read(buffer.data(), fileSize);
+
+  file.close();
+
+  return buffer;
+}
 
 class HelloTriangleApplication
 {
@@ -57,6 +78,7 @@ private:
   void createSwapChain();
   void createImageViews();
   void createGraphicsPipeline();
+  vk::ShaderModule createShaderModule(const std::vector<char> &code);
 
   void mainLoop();
 
@@ -79,6 +101,7 @@ private:
   vk::Format swapChainImageFormat;
   vk::Extent2D swapChainExtent;
   std::vector<vk::ImageView> swapChainImageViews;
+
 
   const std::vector<const char*> validationLayers = 
   {

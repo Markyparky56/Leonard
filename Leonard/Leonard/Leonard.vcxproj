@@ -28,6 +28,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\CompileTriangleShaders.bat" />
+    <None Include="shaders\CompileTriangleShaders_glslc.bat" />
     <None Include="shaders\triangle.frag" />
     <None Include="shaders\triangle.vert" />
   </ItemGroup>

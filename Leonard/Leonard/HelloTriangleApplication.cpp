@@ -501,7 +501,45 @@ void HelloTriangleApplication::createImageViews()
 
 void HelloTriangleApplication::createGraphicsPipeline()
 {
+  vk::ShaderModule vertShaderModule;
+  vk::ShaderModule fragShaderModule;
+  auto vertShaderCode = readBinaryFile("shaders/triangle.vert.spv");
+  auto fragShaderCode = readBinaryFile("shaders/triangle.frag.spv");
+#if defined(_DEBUG)
+  std::cout << "Vert shader code size: " << vertShaderCode.size() << std::endl;
+  std::cout << "Frag shader code size: " << fragShaderCode.size() << std::endl;
+#endif // defined(_DEBUG)
 
+  vertShaderModule = createShaderModule(vertShaderCode);
+  fragShaderModule = createShaderModule(fragShaderCode);
+
+  vk::PipelineShaderStageCreateInfo vertShaderStageInfo;
+  vertShaderStageInfo.setStage(vk::ShaderStageFlagBits::eVertex)
+                     .setModule(vertShaderModule)
+                     .setPName("main");
+
+  vk::PipelineShaderStageCreateInfo fragshaderStageInfo;
+  fragshaderStageInfo.setStage(vk::ShaderStageFlagBits::eFragment)
+                     .setModule(fragShaderModule)
+                     .setPName("main");
+
+  vk::PipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragshaderStageInfo };
+
+  device.destroyShaderModule(vertShaderModule);
+  device.destroyShaderModule(fragShaderModule);
+}
+
+vk::ShaderModule HelloTriangleApplication::createShaderModule(const std::vector<char>& code)
+{
+  vk::ShaderModuleCreateInfo createInfo;
+  createInfo.setCodeSize(code.size())
+            .setPCode(reinterpret_cast<const uint32_t*>(code.data()));
+  vk::ShaderModule shaderModule;
+  if (device.createShaderModule(&createInfo, nullptr, &shaderModule) != vk::Result::eSuccess)
+  {
+    throw std::runtime_error("Failed to create shader module!");
+  }
+  return shaderModule;
 }
 
 void HelloTriangleApplication::mainLoop()
