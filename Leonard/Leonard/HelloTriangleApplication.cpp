@@ -31,6 +31,10 @@ void HelloTriangleApplication::initVulkan()
   createImageViews();
   createRenderPass();
   createGraphicsPipeline();
+  createFramebuffers();
+  createCommandPool();
+  createCommandBuffers();
+  createSemaphores();
 }
 
 bool HelloTriangleApplication::checkValidationLayerSupport()
@@ -628,20 +632,20 @@ void HelloTriangleApplication::createGraphicsPipeline()
 
   vk::GraphicsPipelineCreateInfo pipelineInfo;
   pipelineInfo.setStageCount(2)
-    .setPStages(shaderStages)
-    .setPVertexInputState(&vertexInputInfo)
-    .setPInputAssemblyState(&inputAssembly)
-    .setPViewportState(&viewportState)
-    .setPRasterizationState(&rasterizer)
-    .setPMultisampleState(&multisampling)
-    .setPDepthStencilState(nullptr)
-    .setPColorBlendState(&colorBlending)
-    .setPDynamicState(nullptr)
-    .setLayout(pipelineLayout)
-    .setRenderPass(renderPass)
-    .setSubpass(0)
-    .setBasePipelineHandle(nullptr)
-    .setBasePipelineIndex(-1);
+              .setPStages(shaderStages)
+              .setPVertexInputState(&vertexInputInfo)
+              .setPInputAssemblyState(&inputAssembly)
+              .setPViewportState(&viewportState)
+              .setPRasterizationState(&rasterizer)
+              .setPMultisampleState(&multisampling)
+              .setPDepthStencilState(nullptr)
+              .setPColorBlendState(&colorBlending)
+              .setPDynamicState(nullptr)
+              .setLayout(pipelineLayout)
+              .setRenderPass(renderPass)
+              .setSubpass(0)
+              .setBasePipelineHandle(nullptr)
+              .setBasePipelineIndex(-1);
 
   if (device.createGraphicsPipelines(nullptr, 1, &pipelineInfo, nullptr, &graphicsPipeline) != vk::Result::eSuccess)
   {
@@ -656,13 +660,13 @@ void HelloTriangleApplication::createRenderPass()
 {
   vk::AttachmentDescription colorAttachment;
   colorAttachment.setFormat(swapChainImageFormat)
-    .setSamples(vk::SampleCountFlagBits::e1)
-    .setLoadOp(vk::AttachmentLoadOp::eClear)
-    .setStoreOp(vk::AttachmentStoreOp::eStore)
-    .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-    .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-    .setInitialLayout(vk::ImageLayout::eUndefined)
-    .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+                 .setSamples(vk::SampleCountFlagBits::e1)
+                 .setLoadOp(vk::AttachmentLoadOp::eClear)
+                 .setStoreOp(vk::AttachmentStoreOp::eStore)
+                 .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+                 .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+                 .setInitialLayout(vk::ImageLayout::eUndefined)
+                 .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
 
   vk::AttachmentReference colorAttachmentRef;
   colorAttachmentRef.setAttachment(0) // corresponds to layout(location = 0) in fragment shader
@@ -673,11 +677,22 @@ void HelloTriangleApplication::createRenderPass()
          .setColorAttachmentCount(1)
          .setPColorAttachments(&colorAttachmentRef);
 
+  vk::SubpassDependency dependency;
+  dependency.setSrcSubpass(VK_SUBPASS_EXTERNAL)
+            .setDstSubpass(0)
+            .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+            .setSrcAccessMask(vk::AccessFlags())
+            .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+            .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead
+                            | vk::AccessFlagBits::eColorAttachmentWrite);
+
   vk::RenderPassCreateInfo renderPassInfo;
   renderPassInfo.setAttachmentCount(1)
-    .setPAttachments(&colorAttachment)
-    .setSubpassCount(1)
-    .setPSubpasses(&subpass);
+                .setPAttachments(&colorAttachment)
+                .setSubpassCount(1)
+                .setPSubpasses(&subpass)
+                .setDependencyCount(1)
+                .setPDependencies(&dependency);
 
   if (device.createRenderPass(&renderPassInfo, nullptr, &renderPass) != vk::Result::eSuccess)
   {
@@ -778,16 +793,51 @@ void HelloTriangleApplication::createCommandBuffers()
   }  
 }
 
+void HelloTriangleApplication::createSemaphores()
+{
+  vk::SemaphoreCreateInfo semaphoreInfo;
+
+  imageAvailableSemaphore = device.createSemaphore(semaphoreInfo);
+  renderFinishedSemaphore = device.createSemaphore(semaphoreInfo);
+}
+
 void HelloTriangleApplication::mainLoop()
 {
   while (!glfwWindowShouldClose(window))
   {
     glfwPollEvents();
+    drawFrame();
   }
+}
+
+void HelloTriangleApplication::drawFrame()
+{
+  auto imageIndex = device.acquireNextImageKHR(swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphore, nullptr);
+  
+  vk::Semaphore waitSemaphores[] = { imageAvailableSemaphore };
+  vk::Semaphore signalSemaphores[] = { renderFinishedSemaphore };
+
+  vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
+  vk::SubmitInfo submitInfo;
+  submitInfo.setWaitSemaphoreCount(1)
+            .setPWaitSemaphores(waitSemaphores)
+            .setPWaitDstStageMask(waitStages)
+            .setCommandBufferCount(1)
+            .setPCommandBuffers(&commandBuffers[imageIndex.value])
+            .setSignalSemaphoreCount(1)
+            .setPSignalSemaphores(signalSemaphores);
+
+  graphicsQueue.submit(submitInfo, nullptr);
+
+
+
+
 }
 
 void HelloTriangleApplication::cleanup()
 {
+  device.destroySemaphore(imageAvailableSemaphore);
+  device.destroySemaphore(renderFinishedSemaphore);
   for (size_t i = 0; i < swapChainFramebuffers.size(); i++)
   {
     device.destroyFramebuffer(swapChainFramebuffers[i]);

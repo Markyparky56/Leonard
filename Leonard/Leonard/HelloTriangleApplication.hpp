@@ -83,8 +83,10 @@ private:
   void createFramebuffers();
   void createCommandPool();
   void createCommandBuffers();
+  void createSemaphores();
 
   void mainLoop();
+  void drawFrame();
 
   void cleanup();
 
@@ -111,6 +113,8 @@ private:
   std::vector<vk::Framebuffer> swapChainFramebuffers;
   vk::CommandPool commandPool;
   std::vector<vk::CommandBuffer> commandBuffers;
+  vk::Semaphore imageAvailableSemaphore;
+  vk::Semaphore renderFinishedSemaphore;
 
   const std::vector<const char*> validationLayers = 
   {
