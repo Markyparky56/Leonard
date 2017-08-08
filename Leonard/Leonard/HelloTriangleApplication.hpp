@@ -79,6 +79,8 @@ private:
   void createImageViews();
   void createGraphicsPipeline();
   vk::ShaderModule createShaderModule(const std::vector<char> &code);
+  void createRenderPass();
+  void createFramebuffers();
 
   void mainLoop();
 
@@ -101,7 +103,10 @@ private:
   vk::Format swapChainImageFormat;
   vk::Extent2D swapChainExtent;
   std::vector<vk::ImageView> swapChainImageViews;
-
+  vk::PipelineLayout pipelineLayout;
+  vk::RenderPass renderPass;
+  vk::Pipeline graphicsPipeline;
+  std::vector<vk::Framebuffer> swapChainFramebuffers;
 
   const std::vector<const char*> validationLayers = 
   {

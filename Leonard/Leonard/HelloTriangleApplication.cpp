@@ -27,6 +27,7 @@ void HelloTriangleApplication::initVulkan()
   createLogicalDevice();
   createSwapChain();
   createImageViews();
+  createRenderPass();
   createGraphicsPipeline();
 }
 
@@ -525,8 +526,160 @@ void HelloTriangleApplication::createGraphicsPipeline()
 
   vk::PipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragshaderStageInfo };
 
+  vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
+  vertexInputInfo.setVertexBindingDescriptionCount(0)
+                 .setPVertexBindingDescriptions(nullptr)
+                 .setVertexAttributeDescriptionCount(0)
+                 .setPVertexAttributeDescriptions(nullptr);
+
+  vk::PipelineInputAssemblyStateCreateInfo inputAssembly;
+  inputAssembly.setTopology(vk::PrimitiveTopology::eTriangleList)
+               .setPrimitiveRestartEnable(false);
+
+  vk::Viewport viewport;
+  viewport.setX(0.f)
+          .setY(0.f)
+          .setWidth(static_cast<float>(swapChainExtent.width))
+          .setHeight(static_cast<float>(swapChainExtent.height))
+          .setMinDepth(0.f)
+          .setMaxDepth(1.f);
+
+  vk::Rect2D scissor;
+  scissor.setOffset({ 0,0 })
+         .setExtent(swapChainExtent);
+
+  vk::PipelineViewportStateCreateInfo viewportState;
+  viewportState.setViewportCount(1)
+               .setPViewports(&viewport)
+               .setScissorCount(1)
+               .setPScissors(&scissor);
+
+  vk::PipelineRasterizationStateCreateInfo rasterizer;
+  rasterizer.setDepthClampEnable(false)
+            .setRasterizerDiscardEnable(false)
+            .setPolygonMode(vk::PolygonMode::eFill)
+            .setLineWidth(1.f)
+            .setCullMode(vk::CullModeFlagBits::eBack)
+            .setFrontFace(vk::FrontFace::eClockwise)
+            .setDepthBiasEnable(false)
+            .setDepthBiasConstantFactor(0.f)
+            .setDepthBiasClamp(0.f)
+            .setDepthBiasSlopeFactor(0.f);
+
+  vk::PipelineMultisampleStateCreateInfo multisampling;
+  multisampling.setSampleShadingEnable(false)
+               .setRasterizationSamples(vk::SampleCountFlagBits::e1)
+               .setMinSampleShading(1.f)
+               .setPSampleMask(nullptr)
+               .setAlphaToCoverageEnable(false)
+               .setAlphaToOneEnable(false);
+
+  vk::PipelineColorBlendAttachmentState colorBlendAttachment;
+  colorBlendAttachment.setColorWriteMask( vk::ColorComponentFlagBits::eR 
+                                        | vk::ColorComponentFlagBits::eG 
+                                        | vk::ColorComponentFlagBits::eB 
+                                        | vk::ColorComponentFlagBits::eA)
+                      //.setBlendEnable(false)
+                      //.setSrcColorBlendFactor(vk::BlendFactor::eOne)
+                      //.setDstColorBlendFactor(vk::BlendFactor::eZero)
+                      //.setColorBlendOp(vk::BlendOp::eAdd)
+                      //.setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
+                      //.setDstAlphaBlendFactor(vk::BlendFactor::eZero)
+                      //.setAlphaBlendOp(vk::BlendOp::eAdd);
+                        .setBlendEnable(true)
+                        .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
+                        .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+                        .setColorBlendOp(vk::BlendOp::eAdd)
+                        .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
+                        .setDstAlphaBlendFactor(vk::BlendFactor::eZero)
+                        .setAlphaBlendOp(vk::BlendOp::eAdd);
+
+  vk::PipelineColorBlendStateCreateInfo colorBlending;
+  colorBlending.setLogicOpEnable(false)
+               .setLogicOp(vk::LogicOp::eCopy)
+               .setAttachmentCount(1)
+               .setPAttachments(&colorBlendAttachment)
+               .setBlendConstants({ 0.f, 0.f, 0.f, 0.f });
+
+  std::vector<vk::DynamicState> dynamicStates =
+  {
+    vk::DynamicState::eViewport,
+    vk::DynamicState::eLineWidth
+  };
+
+  vk::PipelineDynamicStateCreateInfo dynamicState;
+  dynamicState.setDynamicStateCount(static_cast<uint32_t>(dynamicStates.size()))
+    .setPDynamicStates(dynamicStates.data());
+
+  
+  vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
+  pipelineLayoutInfo.setSetLayoutCount(0)
+                    .setPSetLayouts(nullptr)
+                    .setPushConstantRangeCount(0)
+                    .setPPushConstantRanges(0);
+    
+  if (device.createPipelineLayout(&pipelineLayoutInfo, nullptr, &pipelineLayout) != vk::Result::eSuccess)
+  {
+    throw std::runtime_error("Failed to create pipeline layout!");
+  }
+
+  vk::GraphicsPipelineCreateInfo pipelineInfo;
+  pipelineInfo.setStageCount(2)
+    .setPStages(shaderStages)
+    .setPVertexInputState(&vertexInputInfo)
+    .setPInputAssemblyState(&inputAssembly)
+    .setPViewportState(&viewportState)
+    .setPRasterizationState(&rasterizer)
+    .setPMultisampleState(&multisampling)
+    .setPDepthStencilState(nullptr)
+    .setPColorBlendState(&colorBlending)
+    .setPDynamicState(nullptr)
+    .setLayout(pipelineLayout)
+    .setRenderPass(renderPass)
+    .setSubpass(0)
+    .setBasePipelineHandle(nullptr)
+    .setBasePipelineIndex(-1);
+
+  if (device.createGraphicsPipelines(nullptr, 1, &pipelineInfo, nullptr, &graphicsPipeline) != vk::Result::eSuccess)
+  {
+    throw std::runtime_error("Failed to create graphics pipeline!");
+  }
+  
   device.destroyShaderModule(vertShaderModule);
   device.destroyShaderModule(fragShaderModule);
+}
+
+void HelloTriangleApplication::createRenderPass()
+{
+  vk::AttachmentDescription colorAttachment;
+  colorAttachment.setFormat(swapChainImageFormat)
+    .setSamples(vk::SampleCountFlagBits::e1)
+    .setLoadOp(vk::AttachmentLoadOp::eClear)
+    .setStoreOp(vk::AttachmentStoreOp::eStore)
+    .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+    .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+    .setInitialLayout(vk::ImageLayout::eUndefined)
+    .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+
+  vk::AttachmentReference colorAttachmentRef;
+  colorAttachmentRef.setAttachment(0) // corresponds to layout(location = 0) in fragment shader
+                    .setLayout(vk::ImageLayout::eColorAttachmentOptimal);
+
+  vk::SubpassDescription subpass;
+  subpass.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+         .setColorAttachmentCount(1)
+         .setPColorAttachments(&colorAttachmentRef);
+
+  vk::RenderPassCreateInfo renderPassInfo;
+  renderPassInfo.setAttachmentCount(1)
+    .setPAttachments(&colorAttachment)
+    .setSubpassCount(1)
+    .setPSubpasses(&subpass);
+
+  if (device.createRenderPass(&renderPassInfo, nullptr, &renderPass) != vk::Result::eSuccess)
+  {
+    throw std::runtime_error("Failed to create render pass!");
+  }
 }
 
 vk::ShaderModule HelloTriangleApplication::createShaderModule(const std::vector<char>& code)
@@ -542,6 +695,32 @@ vk::ShaderModule HelloTriangleApplication::createShaderModule(const std::vector<
   return shaderModule;
 }
 
+void HelloTriangleApplication::createFramebuffers()
+{
+  swapChainFramebuffers.resize(swapChainImageViews.size());
+
+  for (size_t i = 0; i < swapChainImageViews.size(); i++)
+  {
+    vk::ImageView attachments[] =
+    {
+      swapChainImageViews[i]
+    };
+
+    vk::FramebufferCreateInfo framebufferInfo;
+    framebufferInfo.setRenderPass(renderPass)
+                   .setAttachmentCount(1)
+                   .setPAttachments(attachments)
+                   .setWidth(swapChainExtent.width)
+                   .setHeight(swapChainExtent.height)
+                   .setLayers(1);
+
+    if (device.createFramebuffer(&framebufferInfo, nullptr, &swapChainFramebuffers[i]) != vk::Result::eSuccess)
+    {
+      throw std::runtime_error("Failed to create framebuffer!");
+    }
+  }
+}
+
 void HelloTriangleApplication::mainLoop()
 {
   while (!glfwWindowShouldClose(window))
@@ -552,11 +731,17 @@ void HelloTriangleApplication::mainLoop()
 
 void HelloTriangleApplication::cleanup()
 {
+  for (size_t i = 0; i < swapChainFramebuffers.size(); i++)
+  {
+    device.destroyFramebuffer(swapChainFramebuffers[i]);
+  }
   for (size_t i = 0; i < swapChainImageViews.size(); i++)
   {
     device.destroyImageView(swapChainImageViews[i]);
   }
   device.destroySwapchainKHR(swapChain);
+  device.destroyPipelineLayout(pipelineLayout);
+  device.destroyRenderPass(renderPass);
 
   device.destroy();
   removeDebugCallback();
