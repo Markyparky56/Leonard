@@ -1,5 +1,7 @@
 #include "HelloTriangleApplication.hpp"
 
+// TODO: Check which exception throws are actually necessary given Vulkan-Hpp also checks for exceptions
+
 void HelloTriangleApplication::run()
 {
   initWindow();
@@ -403,6 +405,7 @@ void HelloTriangleApplication::createLogicalDevice()
 
   device.getQueue(indices.graphicsFamily, 0, &graphicsQueue);
   device.getQueue(indices.presentFamily, 0, &presentQueue);
+  //vkExtInitDevice(device);
 }
 
 void HelloTriangleApplication::createSurface()
@@ -721,6 +724,60 @@ void HelloTriangleApplication::createFramebuffers()
   }
 }
 
+void HelloTriangleApplication::createCommandPool()
+{
+  QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
+
+  vk::CommandPoolCreateInfo poolInfo;
+  poolInfo.setQueueFamilyIndex(queueFamilyIndices.graphicsFamily);
+
+  if (device.createCommandPool(&poolInfo, nullptr, &commandPool) != vk::Result::eSuccess)
+  {
+    throw std::runtime_error("Failed to create command pool!");
+  }
+}
+
+void HelloTriangleApplication::createCommandBuffers()
+{
+  commandBuffers.resize(swapChainFramebuffers.size());
+
+  vk::CommandBufferAllocateInfo allocInfo;
+  allocInfo.setCommandPool(commandPool)
+    .setLevel(vk::CommandBufferLevel::ePrimary)
+    .setCommandBufferCount(static_cast<uint32_t>(commandBuffers.size()));
+
+  if (device.allocateCommandBuffers(&allocInfo, commandBuffers.data()) != vk::Result::eSuccess)
+  {
+    throw std::runtime_error("Failed to allocate command buffers!");
+  }
+
+  for (size_t i = 0; i < commandBuffers.size(); i++)
+  {
+    vk::CommandBufferBeginInfo beginInfo;
+    beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse)
+             .setPInheritanceInfo(nullptr);
+
+    commandBuffers[i].begin(&beginInfo);
+
+    vk::ClearValue clearColor(std::array<float, 4Ui64>({ 0.f, 0.f, 0.f, 1.f }));
+
+    vk::RenderPassBeginInfo renderPassInfo;
+    renderPassInfo.setRenderPass(renderPass)
+      .setFramebuffer(swapChainFramebuffers[i])
+      .setRenderArea(vk::Rect2D({ 0,0 }, swapChainExtent))
+      .setClearValueCount(1)
+      .setPClearValues(&clearColor);
+
+    commandBuffers[i].beginRenderPass(&renderPassInfo, vk::SubpassContents::eInline);
+
+    commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
+    commandBuffers[i].draw(3, 1, 0, 0);
+
+    commandBuffers[i].endRenderPass();
+    commandBuffers[i].end();
+  }  
+}
+
 void HelloTriangleApplication::mainLoop()
 {
   while (!glfwWindowShouldClose(window))
@@ -742,6 +799,7 @@ void HelloTriangleApplication::cleanup()
   device.destroySwapchainKHR(swapChain);
   device.destroyPipelineLayout(pipelineLayout);
   device.destroyRenderPass(renderPass);
+  device.destroyCommandPool(commandPool);
 
   device.destroy();
   removeDebugCallback();

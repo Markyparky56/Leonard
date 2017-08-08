@@ -81,6 +81,8 @@ private:
   vk::ShaderModule createShaderModule(const std::vector<char> &code);
   void createRenderPass();
   void createFramebuffers();
+  void createCommandPool();
+  void createCommandBuffers();
 
   void mainLoop();
 
@@ -107,6 +109,8 @@ private:
   vk::RenderPass renderPass;
   vk::Pipeline graphicsPipeline;
   std::vector<vk::Framebuffer> swapChainFramebuffers;
+  vk::CommandPool commandPool;
+  std::vector<vk::CommandBuffer> commandBuffers;
 
   const std::vector<const char*> validationLayers = 
   {
