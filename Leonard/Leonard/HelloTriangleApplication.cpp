@@ -808,6 +808,8 @@ void HelloTriangleApplication::mainLoop()
     glfwPollEvents();
     drawFrame();
   }
+
+  device.waitIdle();
 }
 
 void HelloTriangleApplication::drawFrame()
@@ -829,9 +831,17 @@ void HelloTriangleApplication::drawFrame()
 
   graphicsQueue.submit(submitInfo, nullptr);
 
+  vk::SwapchainKHR swapChains[] = { swapChain };
+  vk::PresentInfoKHR presentInfo;
+  presentInfo.setWaitSemaphoreCount(1)
+    .setPWaitSemaphores(signalSemaphores)
+    .setSwapchainCount(1)
+    .setPSwapchains(swapChains)
+    .setPImageIndices(&imageIndex.value)
+    .setPResults(nullptr);
 
-
-
+  presentQueue.presentKHR(presentInfo);
+  presentQueue.waitIdle();
 }
 
 void HelloTriangleApplication::cleanup()
@@ -848,6 +858,7 @@ void HelloTriangleApplication::cleanup()
   }
   device.destroySwapchainKHR(swapChain);
   device.destroyPipelineLayout(pipelineLayout);
+  device.destroyPipeline(graphicsPipeline);
   device.destroyRenderPass(renderPass);
   device.destroyCommandPool(commandPool);
 
