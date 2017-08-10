@@ -39,10 +39,8 @@ void HelloTriangleApplication::initVulkan()
 
 bool HelloTriangleApplication::checkValidationLayerSupport()
 {
-  uint32_t layerCount;
-  vk::enumerateInstanceLayerProperties(&layerCount, nullptr);
-  std::vector<vk::LayerProperties> availableLayers(layerCount);
-  vk::enumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+  std::vector<vk::LayerProperties> availableLayers;
+  availableLayers = vk::enumerateInstanceLayerProperties();
 
   // Check the required validation layers against available layers
   for (const char *layerName : validationLayers)
@@ -117,14 +115,23 @@ void HelloTriangleApplication::listAvailableExtensions()
     std::cout << "\t" << extension.extensionName
               << ((isReqdByGlfw) ? " (Required by GLFW)" : "")
               << std::endl;
+    cleanup();
   }
 }
 
 void HelloTriangleApplication::createInstance()
 {
-  if (enableValidationLayers && !checkValidationLayerSupport())
+  try
   {
-    throw std::runtime_error("Validation layers requested, but not available!");
+    if (enableValidationLayers && !checkValidationLayerSupport())
+    {
+      throw std::runtime_error("Validation layers requested, but not available!");
+    }
+  }
+  catch (std::exception const &e)
+  {
+    std::cout << e.what() << std::endl;
+    cleanup();
   }
 
   vk::ApplicationInfo appInfo;
@@ -154,10 +161,15 @@ void HelloTriangleApplication::createInstance()
     createInfo.setEnabledLayerCount(0);
   }
 
-  vk::Result result = vk::createInstance(&createInfo, nullptr, &instance);
-  if (result != vk::Result::eSuccess)
+  try
   {
-    throw std::runtime_error("Failed to create instance!");
+    instance = vk::createInstance(createInfo);
+  }
+  catch (std::exception const &e)
+  {
+    std::cout << "Failed to create instance!\n\t"
+              <<  e.what()
+              << std::endl;
   }
 
   // Use the ext_loader/vulkan_ext loader to fetch the extension functions which aren't loaded by default
@@ -173,9 +185,15 @@ void HelloTriangleApplication::setupDebugCallback()
   createInfo.setFlags(vk::DebugReportFlagBitsEXT::eError | vk::DebugReportFlagBitsEXT::eWarning)
             .setPfnCallback(debugCallback);
 
-  if (instance.createDebugReportCallbackEXT(&createInfo, nullptr, &callback) != vk::Result::eSuccess)
+  try
   {
-    throw std::runtime_error("Failed to setup debug callback!");
+    callback = instance.createDebugReportCallbackEXT(createInfo);
+  }
+  catch (std::exception const &e)
+  {
+    std::cout << "Failed to setup debug callback!\n\t"
+              << e.what()
+              << std::endl;
   }
 }
 
@@ -188,16 +206,17 @@ void HelloTriangleApplication::removeDebugCallback()
 
 void HelloTriangleApplication::pickPhysicalDevice()
 {
-  uint32_t deviceCount;
-  instance.enumeratePhysicalDevices(&deviceCount, nullptr);
-  
-  if (deviceCount == 0)
+  std::vector<vk::PhysicalDevice> devices;
+  try
   {
-    throw std::runtime_error("Failed to find GPUs with Vulkan support!");
+    devices = instance.enumeratePhysicalDevices();
   }
-
-  std::vector<vk::PhysicalDevice> devices(deviceCount);
-  instance.enumeratePhysicalDevices(&deviceCount, devices.data());
+  catch (std::exception const &e)
+  {
+    std::cout << "Failed to enumerate physical devices!\n\t"
+              << e.what()
+              << std::endl;
+  }
 
   for (const auto& device : devices)
   {
@@ -208,9 +227,16 @@ void HelloTriangleApplication::pickPhysicalDevice()
     }
   }
 
-  if (!physicalDevice)
+  try
   {
-    throw std::runtime_error("Failed to find a suitable GPU!");
+    if (!physicalDevice)
+    {
+      throw std::runtime_error("Failed to find a suitable GPU!");
+    }
+  }
+  catch (std::exception const &e)
+  {
+    std::cout << e.what() << std::endl;
   }
 }
 
@@ -846,26 +872,26 @@ void HelloTriangleApplication::drawFrame()
 
 void HelloTriangleApplication::cleanup()
 {
-  device.destroySemaphore(imageAvailableSemaphore);
-  device.destroySemaphore(renderFinishedSemaphore);
+  if (imageAvailableSemaphore) device.destroySemaphore(imageAvailableSemaphore);
+  if (renderFinishedSemaphore) device.destroySemaphore(renderFinishedSemaphore);
   for (size_t i = 0; i < swapChainFramebuffers.size(); i++)
   {
-    device.destroyFramebuffer(swapChainFramebuffers[i]);
+    if (swapChainFramebuffers[i]) device.destroyFramebuffer(swapChainFramebuffers[i]);
   }
   for (size_t i = 0; i < swapChainImageViews.size(); i++)
   {
-    device.destroyImageView(swapChainImageViews[i]);
+    if (swapChainImageViews[i]) device.destroyImageView(swapChainImageViews[i]);
   }
-  device.destroySwapchainKHR(swapChain);
-  device.destroyPipelineLayout(pipelineLayout);
-  device.destroyPipeline(graphicsPipeline);
-  device.destroyRenderPass(renderPass);
-  device.destroyCommandPool(commandPool);
+  if (swapChain) device.destroySwapchainKHR(swapChain);
+  if (pipelineLayout) device.destroyPipelineLayout(pipelineLayout);
+  if (graphicsPipeline) device.destroyPipeline(graphicsPipeline);
+  if (renderPass) device.destroyRenderPass(renderPass);
+  if (commandPool) device.destroyCommandPool(commandPool);
 
-  device.destroy();
-  removeDebugCallback();
-  instance.destroySurfaceKHR(surface);
-  instance.destroy();
+  if (device) device.destroy();
+  if (callback) removeDebugCallback();
+  if (surface) instance.destroySurfaceKHR(surface);
+  if (instance) instance.destroy();
 
   glfwDestroyWindow(window);
   glfwTerminate();
