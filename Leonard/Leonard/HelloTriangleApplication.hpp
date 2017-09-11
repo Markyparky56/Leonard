@@ -3,6 +3,8 @@
 #include <ext_loader\vulkan_ext.h>
 #include <GLFW/glfw3.h> // TODO: Replace GLFW with own window manager
 
+#include "UnrecoverableException.hpp"
+
 #include <iostream>
 #include <stdexcept>
 #include <functional>
@@ -146,6 +148,14 @@ private:
   {
     std::cerr << "Validation Layer: " << layerPrefix << " Message: " << msg << std::endl;
     return VK_FALSE;
+  }
+
+  static void glfwErrorCallback(
+    int error
+    , const char *description
+  )
+  {
+    std::cerr << "GLFW Error: " << description << std::endl;
   }
 
   // Graphics card stuff

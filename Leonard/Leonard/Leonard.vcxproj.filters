@@ -29,6 +29,12 @@
     <ClInclude Include="HelloTriangleApplication.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="UnrecoverableException.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExceptionMessage.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\CompileTriangleShaders.bat">
@@ -38,9 +44,6 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="shaders\triangle.vert">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="shaders\CompileTriangleShaders_glslc.bat">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

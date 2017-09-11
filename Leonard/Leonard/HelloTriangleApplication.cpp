@@ -12,12 +12,20 @@ void HelloTriangleApplication::run()
 
 void HelloTriangleApplication::initWindow()
 {
-  glfwInit();
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+  glfwSetErrorCallback(glfwErrorCallback);
+  if (glfwInit() == GLFW_TRUE)
+  {
+    auto vulkanSupported = glfwVulkanSupported();
+    std::cout << "Vulkan Supported: " << ((vulkanSupported) ? "True" : "False") << std::endl;
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-  window = glfwCreateWindow(WindowWidth, WindowHeight, "Leonard", nullptr, nullptr);
-
+    window = glfwCreateWindow(WindowWidth, WindowHeight, "Leonard", nullptr, nullptr);
+  }
+  else
+  {
+    throw UnrecoverableRuntimeException(CreateBasicExceptionMessage("GLFW Failed to initialise!"), "glfwInit");
+  }
 }
 
 void HelloTriangleApplication::initVulkan()
@@ -89,10 +97,7 @@ std::vector<const char*> HelloTriangleApplication::getRequiredExtensions()
 void HelloTriangleApplication::listAvailableExtensions()
 {
   // Get vulkan extensions
-  uint32_t extensionCount = 0;
-  vk::enumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-  std::vector<vk::ExtensionProperties> extensions(extensionCount);
-  vk::enumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+  std::vector<vk::ExtensionProperties> extensions = vk::enumerateInstanceExtensionProperties();
 
   // Get glfw required extensions
   unsigned int glfwExtensionCount = 0;
@@ -106,7 +111,7 @@ void HelloTriangleApplication::listAvailableExtensions()
     bool isReqdByGlfw = false;
     for (unsigned int i = 0; i < glfwExtensionCount; i++)
     {
-      if (glfwExtensions[i] == extension.extensionName)
+      if(strcmp(glfwExtensions[i], extension.extensionName) == 0)
       {
         isReqdByGlfw = true;
         break;
@@ -115,24 +120,17 @@ void HelloTriangleApplication::listAvailableExtensions()
     std::cout << "\t" << extension.extensionName
               << ((isReqdByGlfw) ? " (Required by GLFW)" : "")
               << std::endl;
-    cleanup();
   }
 }
 
 void HelloTriangleApplication::createInstance()
 {
-  try
+
+  if (enableValidationLayers && !checkValidationLayerSupport())
   {
-    if (enableValidationLayers && !checkValidationLayerSupport())
-    {
-      throw std::runtime_error("Validation layers requested, but not available!");
-    }
-  }
-  catch (std::exception const &e)
-  {
-    std::cout << e.what() << std::endl;
     cleanup();
-  }
+    throw UnrecoverableRuntimeException(CreateBasicExceptionMessage("Validation layers requested but not available!"), "checkValidationLayerSupport");
+  }    
 
   vk::ApplicationInfo appInfo;
   appInfo.setPApplicationName("Hello Triangle")
@@ -165,11 +163,10 @@ void HelloTriangleApplication::createInstance()
   {
     instance = vk::createInstance(createInfo);
   }
-  catch (std::exception const &e)
+  catch (std::system_error const &e)
   {
-    std::cout << "Failed to create instance!\n\t"
-              <<  e.what()
-              << std::endl;
+    cleanup();
+    throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to create instance!"), e);
   }
 
   // Use the ext_loader/vulkan_ext loader to fetch the extension functions which aren't loaded by default
@@ -189,11 +186,10 @@ void HelloTriangleApplication::setupDebugCallback()
   {
     callback = instance.createDebugReportCallbackEXT(createInfo);
   }
-  catch (std::exception const &e)
+  catch (std::system_error const &e)
   {
-    std::cout << "Failed to setup debug callback!\n\t"
-              << e.what()
-              << std::endl;
+    cleanup();
+    throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to setup debug callback!"), e);
   }
 }
 
@@ -211,11 +207,10 @@ void HelloTriangleApplication::pickPhysicalDevice()
   {
     devices = instance.enumeratePhysicalDevices();
   }
-  catch (std::exception const &e)
+  catch (std::system_error const &e)
   {
-    std::cout << "Failed to enumerate physical devices!\n\t"
-              << e.what()
-              << std::endl;
+    cleanup();
+    throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to enumerate physical devices!"), e);
   }
 
   for (const auto& device : devices)
@@ -227,17 +222,11 @@ void HelloTriangleApplication::pickPhysicalDevice()
     }
   }
 
-  try
+  if (!physicalDevice)
   {
-    if (!physicalDevice)
-    {
-      throw std::runtime_error("Failed to find a suitable GPU!");
-    }
-  }
-  catch (std::exception const &e)
-  {
-    std::cout << e.what() << std::endl;
-  }
+    cleanup();
+    throw UnrecoverableRuntimeException(CreateBasicExceptionMessage("Failed to find a suitable GPU!"), "pickPhysicalDevice");
+  }  
 }
 
 bool HelloTriangleApplication::isDeviceSuitable(vk::PhysicalDevice device)
@@ -389,12 +378,6 @@ HelloTriangleApplication::QueueFamilyIndices HelloTriangleApplication::findQueue
 void HelloTriangleApplication::createLogicalDevice()
 {
   QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-  //float queuePriority = 1.f;
-
-  //vk::DeviceQueueCreateInfo queueCreateInfo;
-  //queueCreateInfo.setQueueFamilyIndex(indices.graphicsFamily)
-  //               .setQueueCount(1)
-  //               .setPQueuePriorities(&queuePriority);
 
   std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
   std::set<int> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily };
@@ -428,21 +411,29 @@ void HelloTriangleApplication::createLogicalDevice()
     createInfo.setEnabledLayerCount(0);
   }
 
-  if (physicalDevice.createDevice(&createInfo, nullptr, &device) != vk::Result::eSuccess)
+  try
   {
-    throw std::runtime_error("Failed to create logical device!");
+    device = physicalDevice.createDevice(createInfo);
   }
+  catch(std::system_error const &e)
+  {
+    cleanup();
+    throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to create logical device!"), e);
+  }
+  
+  //vkExtInitDevice(device);
 
   device.getQueue(indices.graphicsFamily, 0, &graphicsQueue);
   device.getQueue(indices.presentFamily, 0, &presentQueue);
-  //vkExtInitDevice(device);
 }
 
 void HelloTriangleApplication::createSurface()
 {
-  if (glfwCreateWindowSurface(instance, window, nullptr, reinterpret_cast<VkSurfaceKHR*>(&surface)) != VK_SUCCESS)
+  VkResult result = glfwCreateWindowSurface(instance, window, nullptr, reinterpret_cast<VkSurfaceKHR*>(&surface));
+  if (result != VK_SUCCESS)
   {
-    throw std::runtime_error("Failed to create window surface!");
+    cleanup();
+    throw UnrecoverableRuntimeException(CreateBasicExceptionMessage("Failed to create window surface!"), "glfwCreateWindowSurface");
   }
 }
 
@@ -492,9 +483,14 @@ void HelloTriangleApplication::createSwapChain()
             .setClipped(true)
             .setOldSwapchain(nullptr);
 
-  if (device.createSwapchainKHR(&createInfo, nullptr, &swapChain) != vk::Result::eSuccess)
+  try
   {
-    throw std::runtime_error("Failed to create swap chain!");
+    swapChain = device.createSwapchainKHR(createInfo);
+  }
+  catch (std::system_error const &e)
+  {
+    cleanup();
+    throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to create swap chain!"), e);
   }
 
   swapChainImages = device.getSwapchainImagesKHR(swapChain);
@@ -526,9 +522,14 @@ void HelloTriangleApplication::createImageViews()
                                     1U  // Layer Count
                                   });
 
-    if (device.createImageView(&createInfo, nullptr, &swapChainImageViews[i]) != vk::Result::eSuccess)
+    try
     {
-      throw std::runtime_error("Failed to create image views!");
+      swapChainImageViews[i] = device.createImageView(createInfo);
+    }
+    catch (std::system_error const &e)
+    {
+      cleanup();
+      throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to create image views!"), e);
     }
   }
 }
@@ -650,10 +651,15 @@ void HelloTriangleApplication::createGraphicsPipeline()
                     .setPSetLayouts(nullptr)
                     .setPushConstantRangeCount(0)
                     .setPPushConstantRanges(0);
-    
-  if (device.createPipelineLayout(&pipelineLayoutInfo, nullptr, &pipelineLayout) != vk::Result::eSuccess)
+  
+  try
   {
-    throw std::runtime_error("Failed to create pipeline layout!");
+    pipelineLayout = device.createPipelineLayout(pipelineLayoutInfo);
+  }
+  catch (std::system_error const &e)
+  {
+    cleanup();
+    throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to create pipeline layout!"), e);
   }
 
   vk::GraphicsPipelineCreateInfo pipelineInfo;
@@ -673,9 +679,14 @@ void HelloTriangleApplication::createGraphicsPipeline()
               .setBasePipelineHandle(nullptr)
               .setBasePipelineIndex(-1);
 
-  if (device.createGraphicsPipelines(nullptr, 1, &pipelineInfo, nullptr, &graphicsPipeline) != vk::Result::eSuccess)
+  try
   {
-    throw std::runtime_error("Failed to create graphics pipeline!");
+    graphicsPipeline = device.createGraphicsPipeline(nullptr, pipelineInfo);
+  }
+  catch (std::system_error const &e)
+  {
+    cleanup();
+    throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to create graphics pipeline!"), e);
   }
   
   device.destroyShaderModule(vertShaderModule);
@@ -720,9 +731,14 @@ void HelloTriangleApplication::createRenderPass()
                 .setDependencyCount(1)
                 .setPDependencies(&dependency);
 
-  if (device.createRenderPass(&renderPassInfo, nullptr, &renderPass) != vk::Result::eSuccess)
+  try
   {
-    throw std::runtime_error("Failed to create render pass!");
+    renderPass = device.createRenderPass(renderPassInfo);
+  }
+  catch (std::system_error const &e)
+  {
+    cleanup();
+    throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to create render pass!"), e);
   }
 }
 
@@ -732,9 +748,14 @@ vk::ShaderModule HelloTriangleApplication::createShaderModule(const std::vector<
   createInfo.setCodeSize(code.size())
             .setPCode(reinterpret_cast<const uint32_t*>(code.data()));
   vk::ShaderModule shaderModule;
-  if (device.createShaderModule(&createInfo, nullptr, &shaderModule) != vk::Result::eSuccess)
+  try
   {
-    throw std::runtime_error("Failed to create shader module!");
+    shaderModule = device.createShaderModule(createInfo);
+  }
+  catch (std::system_error const &e)
+  {
+    cleanup();
+    throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to create shader module!"), e);
   }
   return shaderModule;
 }
@@ -758,9 +779,14 @@ void HelloTriangleApplication::createFramebuffers()
                    .setHeight(swapChainExtent.height)
                    .setLayers(1);
 
-    if (device.createFramebuffer(&framebufferInfo, nullptr, &swapChainFramebuffers[i]) != vk::Result::eSuccess)
+    try
     {
-      throw std::runtime_error("Failed to create framebuffer!");
+      swapChainFramebuffers[i] = device.createFramebuffer(framebufferInfo);
+    }
+    catch (std::system_error const &e)
+    {
+      cleanup();
+      throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to create framebuffer!"), e);
     }
   }
 }
@@ -772,9 +798,14 @@ void HelloTriangleApplication::createCommandPool()
   vk::CommandPoolCreateInfo poolInfo;
   poolInfo.setQueueFamilyIndex(queueFamilyIndices.graphicsFamily);
 
-  if (device.createCommandPool(&poolInfo, nullptr, &commandPool) != vk::Result::eSuccess)
+  try
   {
-    throw std::runtime_error("Failed to create command pool!");
+    commandPool = device.createCommandPool(poolInfo);
+  }
+  catch (std::system_error const &e)
+  {
+    cleanup();
+    throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to create command pool!"), e);
   }
 }
 
@@ -787,9 +818,14 @@ void HelloTriangleApplication::createCommandBuffers()
     .setLevel(vk::CommandBufferLevel::ePrimary)
     .setCommandBufferCount(static_cast<uint32_t>(commandBuffers.size()));
 
-  if (device.allocateCommandBuffers(&allocInfo, commandBuffers.data()) != vk::Result::eSuccess)
+  try
   {
-    throw std::runtime_error("Failed to allocate command buffers!");
+    commandBuffers = device.allocateCommandBuffers(allocInfo);
+  }
+  catch (std::system_error const &e)
+  {
+    cleanup();
+    throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to allocate command buffers!"), e);
   }
 
   for (size_t i = 0; i < commandBuffers.size(); i++)

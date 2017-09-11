@@ -24,11 +24,12 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ExceptionMessage.hpp" />
     <ClInclude Include="HelloTriangleApplication.hpp" />
+    <ClInclude Include="UnrecoverableException.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\CompileTriangleShaders.bat" />
-    <None Include="shaders\CompileTriangleShaders_glslc.bat" />
     <None Include="shaders\triangle.frag" />
     <None Include="shaders\triangle.vert" />
   </ItemGroup>
@@ -117,13 +118,13 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\VulkanWork\glm;$(SolutionDir)\..\..\glfw-3.2.1.bin.WIN64\include;C:\VulkanSDK\1.0.49.0\Include;$(SolutionDir)\..\..\Vulkan-Docs\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\VulkanWork\glm;C:\local\glfw-3.2.1\include;C:\VulkanSDK\1.0.57.0\Include;$(SolutionDir)\..\..\Vulkan-Docs\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)\..\..\glfw-3.2.1.bin.WIN64\lib-vc2017\$(Configuration);C:\VulkanSDK\1.0.49.0\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)\..\..\glfw-3.2.1.bin.WIN64\lib-vc2017\$(Configuration);C:\VulkanSDK\1.0.57.0\Source\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -155,7 +156,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\VulkanWork\glm;$(SolutionDir)\..\..\glfw-3.2.1.bin.WIN64\include;C:\VulkanSDK\1.0.49.0\Include;$(SolutionDir)\..\..\Vulkan-Docs\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\VulkanWork\glm;C:\local\glfw-3.2.1\include;C:\VulkanSDK\1.0.57.0\Include;$(SolutionDir)\..\..\Vulkan-Docs\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
@@ -163,7 +164,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)\..\..\glfw-3.2.1.bin.WIN64\lib-vc2017\$(Configuration);C:\VulkanSDK\1.0.49.0\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)\..\..\glfw-3.2.1.bin.WIN64\lib-vc2017\$(Configuration);C:\VulkanSDK\1.0.57.0\Source\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
