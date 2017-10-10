@@ -1,6 +1,7 @@
 #pragma once
+//#include <vkel.h>
 #include <vulkan/vulkan.hpp>
-#include <ext_loader\vulkan_ext.h>
+//#include <ext_loader\vulkan_ext.h>
 #include <GLFW/glfw3.h> // TODO: Replace GLFW with own window manager
 
 #include "UnrecoverableException.hpp"
@@ -86,6 +87,8 @@ private:
   void createCommandPool();
   void createCommandBuffers();
   void createSemaphores();
+  void recreateSwapChain();
+  void cleanupSwapChain();
 
   void mainLoop();
   void drawFrame();
@@ -151,11 +154,23 @@ private:
   }
 
   static void glfwErrorCallback(
-    int error
+      int error
     , const char *description
   )
   {
     std::cerr << "GLFW Error: " << description << std::endl;
+  }
+
+  static void glfwOnWindowResized(
+      GLFWwindow *window
+    , int width
+    , int height
+  )
+  {
+    if (width == 0 || height == 0) return;
+
+    HelloTriangleApplication *app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
+    app->recreateSwapChain();
   }
 
   // Graphics card stuff

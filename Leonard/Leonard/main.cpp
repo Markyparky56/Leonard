@@ -25,7 +25,7 @@ int main()
   {
     std::cerr << "Unrecoverable Exception!\n"
       << "What: " << e.what() << "\n"
-      << "Code: " << e.code() << "\n"
+      << "Code: " << e.code().value() << "\n"
       << e.message()
       << "\nFile: " << e.fileName()
       << "\nFunction: " << e.funcName()

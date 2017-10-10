@@ -24,6 +24,9 @@
     <ClCompile Include="..\..\..\Vulkan-Docs\src\ext_loader\vulkan_ext.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\vkel\vkel.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="HelloTriangleApplication.hpp">
@@ -33,6 +36,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ExceptionMessage.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanExtensions.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

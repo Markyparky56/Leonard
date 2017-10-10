@@ -1,4 +1,5 @@
 #include "HelloTriangleApplication.hpp"
+#include "VulkanExtensions.hpp"
 
 // TODO: Check which exception throws are actually necessary given Vulkan-Hpp also checks for exceptions
 
@@ -18,9 +19,11 @@ void HelloTriangleApplication::initWindow()
     auto vulkanSupported = glfwVulkanSupported();
     std::cout << "Vulkan Supported: " << ((vulkanSupported) ? "True" : "False") << std::endl;
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
     window = glfwCreateWindow(WindowWidth, WindowHeight, "Leonard", nullptr, nullptr);
+    glfwSetWindowUserPointer(window, this);
+    glfwSetWindowSizeCallback(window, HelloTriangleApplication::glfwOnWindowResized);
   }
   else
   {
@@ -169,9 +172,7 @@ void HelloTriangleApplication::createInstance()
     throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to create instance!"), e);
   }
 
-  // Use the ext_loader/vulkan_ext loader to fetch the extension functions which aren't loaded by default
-  // TODO: Consider moving to after device initialisation as we only have one device
-  vkExtInitInstance(instance);
+  LoadDebugCallbackFuncs(instance);
 }
 
 void HelloTriangleApplication::setupDebugCallback()
@@ -266,7 +267,15 @@ bool HelloTriangleApplication::isDeviceSuitable(vk::PhysicalDevice device)
 bool HelloTriangleApplication::checkDeviceExtensionSupport(vk::PhysicalDevice device)
 {
   std::vector<vk::ExtensionProperties> availableExtensions;
-  availableExtensions = device.enumerateDeviceExtensionProperties();
+  try
+  {
+    availableExtensions = device.enumerateDeviceExtensionProperties();
+  }
+  catch (std::system_error const &e)
+  {
+    cleanup();
+    throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to enumerate device extension properties!"), e);
+  }
 
   std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
@@ -282,9 +291,12 @@ HelloTriangleApplication::SwapChainSupportDetails HelloTriangleApplication::quer
 {
   SwapChainSupportDetails details;
 
-  details.capabilities = device.getSurfaceCapabilitiesKHR(surface);
-  details.formats = device.getSurfaceFormatsKHR(surface);
-  details.presentModes = device.getSurfacePresentModesKHR(surface);
+  try { details.capabilities = device.getSurfaceCapabilitiesKHR(surface); }
+  catch (std::system_error const &e) { cleanup(); throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to get surface capabilities!"), e); }
+  try { details.formats = device.getSurfaceFormatsKHR(surface); }
+  catch (std::system_error const &e) { cleanup(); throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to get surface formats!"), e); }
+  try { details.presentModes = device.getSurfacePresentModesKHR(surface); }
+  catch (std::system_error const &e) { cleanup(); throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to get surface present modes!"), e); }
 
   return details;
 }
@@ -334,7 +346,9 @@ vk::Extent2D HelloTriangleApplication::chooseSwapExtent(const vk::SurfaceCapabil
   }
   else
   {
-    vk::Extent2D actualExtent = { WindowWidth, WindowHeight };
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
+    vk::Extent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 
     actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
     actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
@@ -357,8 +371,9 @@ HelloTriangleApplication::QueueFamilyIndices HelloTriangleApplication::findQueue
       indices.graphicsFamily = i;
     }
 
-    vk::Bool32 presentSupport = false;
-    device.getSurfaceSupportKHR(i, surface, &presentSupport);
+    vk::Bool32 presentSupport;
+    try { presentSupport = device.getSurfaceSupportKHR(i, surface); }
+    catch (std::system_error const &e) { cleanup(); throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to get surface support!"), e); }
 
     if (queueFamily.queueCount > 0 && presentSupport)
     {
@@ -420,11 +435,9 @@ void HelloTriangleApplication::createLogicalDevice()
     cleanup();
     throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to create logical device!"), e);
   }
-  
-  //vkExtInitDevice(device);
 
-  device.getQueue(indices.graphicsFamily, 0, &graphicsQueue);
-  device.getQueue(indices.presentFamily, 0, &presentQueue);
+  graphicsQueue = device.getQueue(indices.graphicsFamily, 0);
+  presentQueue = device.getQueue(indices.presentFamily, 0);
 }
 
 void HelloTriangleApplication::createSurface()
@@ -493,7 +506,12 @@ void HelloTriangleApplication::createSwapChain()
     throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to create swap chain!"), e);
   }
 
-  swapChainImages = device.getSwapchainImagesKHR(swapChain);
+  try { swapChainImages = device.getSwapchainImagesKHR(swapChain); }
+  catch (std::system_error const &e) 
+  { 
+    cleanup();
+    throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to get swapchain images!"), e);
+  }
   swapChainImageFormat = surfaceFormat.format;
   swapChainExtent = extent;
 }
@@ -859,8 +877,41 @@ void HelloTriangleApplication::createSemaphores()
 {
   vk::SemaphoreCreateInfo semaphoreInfo;
 
-  imageAvailableSemaphore = device.createSemaphore(semaphoreInfo);
-  renderFinishedSemaphore = device.createSemaphore(semaphoreInfo);
+  try { imageAvailableSemaphore = device.createSemaphore(semaphoreInfo); }
+  catch (std::system_error const &e) { cleanup(); throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to create imageAvailableSemaphore!"), e); }
+  try { renderFinishedSemaphore = device.createSemaphore(semaphoreInfo); }
+  catch (std::system_error const &e) { cleanup();  throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to create renderFinishedSemaphore!"), e); }
+}
+
+void HelloTriangleApplication::recreateSwapChain()
+{
+  device.waitIdle();
+
+  cleanupSwapChain();
+
+  createSwapChain();
+  createImageViews();
+  createRenderPass();
+  createGraphicsPipeline();
+  createFramebuffers();
+  createCommandBuffers();
+}
+
+void HelloTriangleApplication::cleanupSwapChain()
+{
+  for (size_t i = 0; i < swapChainFramebuffers.size(); i++)
+  {
+    if (swapChainFramebuffers[i]) device.destroyFramebuffer(swapChainFramebuffers[i]);
+  }
+  device.freeCommandBuffers(commandPool, commandBuffers);
+  if (graphicsPipeline) device.destroyPipeline(graphicsPipeline);
+  if (pipelineLayout) device.destroyPipelineLayout(pipelineLayout);
+  if (renderPass) device.destroyRenderPass(renderPass);
+  for (size_t i = 0; i < swapChainImageViews.size(); i++)
+  {
+    if (swapChainImageViews[i]) device.destroyImageView(swapChainImageViews[i]);
+  }
+  if (swapChain) device.destroySwapchainKHR(swapChain);
 }
 
 void HelloTriangleApplication::mainLoop()
@@ -876,8 +927,26 @@ void HelloTriangleApplication::mainLoop()
 
 void HelloTriangleApplication::drawFrame()
 {
-  auto imageIndex = device.acquireNextImageKHR(swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphore, nullptr);
-  
+  uint32_t imageIndex;
+  try
+  {
+    auto imageIndexResult = device.acquireNextImageKHR(swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphore, nullptr);
+    imageIndex = imageIndexResult.value;
+  }
+  catch (std::system_error const &e)
+  {
+    if (e.code().value() == static_cast<int>(vk::Result::eErrorOutOfDateKHR))
+    {
+      recreateSwapChain();
+      return;
+    }
+    else
+    {
+      cleanup();
+      throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to acquire swap chain image!"), e);
+    }
+  }  
+
   vk::Semaphore waitSemaphores[] = { imageAvailableSemaphore };
   vk::Semaphore signalSemaphores[] = { renderFinishedSemaphore };
 
@@ -887,47 +956,54 @@ void HelloTriangleApplication::drawFrame()
             .setPWaitSemaphores(waitSemaphores)
             .setPWaitDstStageMask(waitStages)
             .setCommandBufferCount(1)
-            .setPCommandBuffers(&commandBuffers[imageIndex.value])
+            .setPCommandBuffers(&commandBuffers[imageIndex])
             .setSignalSemaphoreCount(1)
             .setPSignalSemaphores(signalSemaphores);
 
-  graphicsQueue.submit(submitInfo, nullptr);
+  try { graphicsQueue.submit(submitInfo, nullptr); }
+  catch (std::system_error const &e) { cleanup(); throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to submit to graphics queue!"), e); }
 
   vk::SwapchainKHR swapChains[] = { swapChain };
   vk::PresentInfoKHR presentInfo;
   presentInfo.setWaitSemaphoreCount(1)
-    .setPWaitSemaphores(signalSemaphores)
-    .setSwapchainCount(1)
-    .setPSwapchains(swapChains)
-    .setPImageIndices(&imageIndex.value)
-    .setPResults(nullptr);
+             .setPWaitSemaphores(signalSemaphores)
+             .setSwapchainCount(1)
+             .setPSwapchains(swapChains)
+             .setPImageIndices(&imageIndex)
+             .setPResults(nullptr);
 
-  presentQueue.presentKHR(presentInfo);
+  try
+  {
+    presentQueue.presentKHR(presentInfo);
+  }
+  catch (std::system_error const &e)
+  {
+    if (e.code().value() == static_cast<int>(vk::Result::eErrorOutOfDateKHR))
+    {
+      recreateSwapChain();
+    }
+    else
+    {
+      cleanup();
+      throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to present swap chain image!"), e);
+    }
+  }
   presentQueue.waitIdle();
 }
 
 void HelloTriangleApplication::cleanup()
 {
+  cleanupSwapChain();
+
   if (imageAvailableSemaphore) device.destroySemaphore(imageAvailableSemaphore);
   if (renderFinishedSemaphore) device.destroySemaphore(renderFinishedSemaphore);
-  for (size_t i = 0; i < swapChainFramebuffers.size(); i++)
-  {
-    if (swapChainFramebuffers[i]) device.destroyFramebuffer(swapChainFramebuffers[i]);
-  }
-  for (size_t i = 0; i < swapChainImageViews.size(); i++)
-  {
-    if (swapChainImageViews[i]) device.destroyImageView(swapChainImageViews[i]);
-  }
-  if (swapChain) device.destroySwapchainKHR(swapChain);
-  if (pipelineLayout) device.destroyPipelineLayout(pipelineLayout);
-  if (graphicsPipeline) device.destroyPipeline(graphicsPipeline);
-  if (renderPass) device.destroyRenderPass(renderPass);
-  if (commandPool) device.destroyCommandPool(commandPool);
-
+  if (commandPool) device.destroyCommandPool(commandPool);  
   if (device) device.destroy();
   if (callback) removeDebugCallback();
   if (surface) instance.destroySurfaceKHR(surface);
   if (instance) instance.destroy();
+
+  //vkelUninit();
 
   glfwDestroyWindow(window);
   glfwTerminate();
