@@ -6,9 +6,19 @@
 void HelloTriangleApplication::run()
 {
   initWindow();
+  setupRenderables(); // Simple function to initialise vertices array
   initVulkan();
   mainLoop();
   cleanup();
+}
+
+void HelloTriangleApplication::setupRenderables()
+{
+  vertices = {
+    {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+  };
 }
 
 void HelloTriangleApplication::initWindow()
@@ -44,6 +54,7 @@ void HelloTriangleApplication::initVulkan()
   createGraphicsPipeline();
   createFramebuffers();
   createCommandPool();
+  createVertexBuffer();
   createCommandBuffers();
   createSemaphores();
 }
@@ -80,11 +91,11 @@ std::vector<const char*> HelloTriangleApplication::getRequiredExtensions()
 {
   std::vector<const char*> extensions;
 
-  unsigned int glfwExtensionCount = 0;
+  uint32_t glfwExtensionCount = 0;
   const char **glfwExtensions;
   glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-  for (unsigned int i = 0; i < glfwExtensionCount; i++)
+  for (uint32_t i = 0; i < glfwExtensionCount; i++)
   {
     extensions.push_back(glfwExtensions[i]);
   }
@@ -103,7 +114,7 @@ void HelloTriangleApplication::listAvailableExtensions()
   std::vector<vk::ExtensionProperties> extensions = vk::enumerateInstanceExtensionProperties();
 
   // Get glfw required extensions
-  unsigned int glfwExtensionCount = 0;
+  uint32_t glfwExtensionCount = 0;
   const char **glfwExtensions;
   glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
@@ -112,7 +123,7 @@ void HelloTriangleApplication::listAvailableExtensions()
   for (const auto& extension : extensions)
   {
     bool isReqdByGlfw = false;
-    for (unsigned int i = 0; i < glfwExtensionCount; i++)
+    for (uint32_t i = 0; i < glfwExtensionCount; i++)
     {
       if(strcmp(glfwExtensions[i], extension.extensionName) == 0)
       {
@@ -390,6 +401,23 @@ HelloTriangleApplication::QueueFamilyIndices HelloTriangleApplication::findQueue
   return indices;
 }
 
+uint32_t HelloTriangleApplication::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
+{
+  vk::PhysicalDeviceMemoryProperties memProperties;
+  memProperties = physicalDevice.getMemoryProperties();
+
+  for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+  {
+    if ((typeFilter & (1 << i))
+    && ((memProperties.memoryTypes[i].propertyFlags & properties) == properties))
+    {
+      return i;
+    }
+  }
+
+  throw UnrecoverableRuntimeException(CreateBasicExceptionMessage("Failed to find suitable memory type!"), "findMemoryType");
+}
+
 void HelloTriangleApplication::createLogicalDevice()
 {
   QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
@@ -448,6 +476,84 @@ void HelloTriangleApplication::createSurface()
     cleanup();
     throw UnrecoverableRuntimeException(CreateBasicExceptionMessage("Failed to create window surface!"), "glfwCreateWindowSurface");
   }
+}
+
+void HelloTriangleApplication::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Buffer & buffer, vk::DeviceMemory & bufferMemory)
+{
+  vk::BufferCreateInfo bufferInfo = {};
+  bufferInfo.setSize(size)
+            .setUsage(usage)
+            .setSharingMode(vk::SharingMode::eExclusive);
+
+  try
+  {
+    buffer = device.createBuffer(bufferInfo);
+  }
+  catch (std::system_error const &e)
+  {
+    cleanup();
+    throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to create vertex buffer!"), e);
+  }
+
+  vk::MemoryRequirements memRequirements;
+  memRequirements = device.getBufferMemoryRequirements(buffer);
+
+  vk::MemoryAllocateInfo allocInfo = {};
+  allocInfo.setAllocationSize(memRequirements.size)
+           .setMemoryTypeIndex(findMemoryType(memRequirements.memoryTypeBits, properties));
+
+  try
+  {
+    bufferMemory = device.allocateMemory(allocInfo);
+  }
+  catch (std::system_error const &e)
+  {
+    cleanup();
+    throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to allocate vertex buffer memory!"), e);
+  }
+
+  device.bindBufferMemory(buffer, bufferMemory, 0);
+}
+
+void HelloTriangleApplication::copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size)
+{
+  vk::CommandBufferAllocateInfo allocInfo = {};
+  allocInfo.setLevel(vk::CommandBufferLevel::ePrimary)
+           .setCommandPool(commandPool)
+           .setCommandBufferCount(1);
+
+  vk::CommandBuffer commandBuffer;
+  device.allocateCommandBuffers(&allocInfo, &commandBuffer);
+
+  vk::CommandBufferBeginInfo beginInfo = {};
+  beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+
+  commandBuffer.begin(beginInfo);
+  
+  vk::BufferCopy copyRegion = {};
+  copyRegion.setSrcOffset(0)
+    .setDstOffset(0)
+    .setSize(size);
+  commandBuffer.copyBuffer(srcBuffer, dstBuffer, 1, &copyRegion);
+
+  commandBuffer.end();
+
+  vk::SubmitInfo submitInfo = {};
+  submitInfo.setCommandBufferCount(1)
+            .setPCommandBuffers(&commandBuffer);
+
+  try 
+  { 
+    graphicsQueue.submit(1, &submitInfo, nullptr); 
+    graphicsQueue.waitIdle(); 
+  }
+  catch (std::system_error const &e) 
+  { 
+    cleanup(); 
+    throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to submit copy buffer command to graphics queue!"), e); 
+  }
+
+  device.freeCommandBuffers(commandPool, 1, &commandBuffer);
 }
 
 void HelloTriangleApplication::createSwapChain()
@@ -578,11 +684,14 @@ void HelloTriangleApplication::createGraphicsPipeline()
 
   vk::PipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragshaderStageInfo };
 
+  auto bindingDescription = Vertex::getBindingDescription();
+  auto attributeDescriptions = Vertex::getAttributeDescriptions();
+
   vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
-  vertexInputInfo.setVertexBindingDescriptionCount(0)
-                 .setPVertexBindingDescriptions(nullptr)
-                 .setVertexAttributeDescriptionCount(0)
-                 .setPVertexAttributeDescriptions(nullptr);
+  vertexInputInfo.setVertexBindingDescriptionCount(1)
+                 .setPVertexBindingDescriptions(&bindingDescription)
+                 .setVertexAttributeDescriptionCount(static_cast<uint32_t>(attributeDescriptions.size()))
+                 .setPVertexAttributeDescriptions(attributeDescriptions.data());
 
   vk::PipelineInputAssemblyStateCreateInfo inputAssembly;
   inputAssembly.setTopology(vk::PrimitiveTopology::eTriangleList)
@@ -827,14 +936,41 @@ void HelloTriangleApplication::createCommandPool()
   }
 }
 
+void HelloTriangleApplication::createVertexBuffer()
+{
+  vk::DeviceSize bufferSize = sizeof(Vertex) * vertices.size();
+
+  vk::Buffer stagingBuffer;
+  vk::DeviceMemory stagingBufferMemory;
+  createBuffer( bufferSize
+              , vk::BufferUsageFlagBits::eTransferSrc
+              , vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+              , stagingBuffer, stagingBufferMemory);
+
+  void *data;
+  data = device.mapMemory(stagingBufferMemory, 0, bufferSize);
+  memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
+  device.unmapMemory(stagingBufferMemory);
+
+  createBuffer( bufferSize
+              , vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer
+              , vk::MemoryPropertyFlagBits::eDeviceLocal
+              , vertexBuffer, vertexBufferMemory); 
+
+  copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+
+  device.destroyBuffer(stagingBuffer);
+  device.freeMemory(stagingBufferMemory);
+}
+
 void HelloTriangleApplication::createCommandBuffers()
 {
   commandBuffers.resize(swapChainFramebuffers.size());
 
   vk::CommandBufferAllocateInfo allocInfo;
   allocInfo.setCommandPool(commandPool)
-    .setLevel(vk::CommandBufferLevel::ePrimary)
-    .setCommandBufferCount(static_cast<uint32_t>(commandBuffers.size()));
+           .setLevel(vk::CommandBufferLevel::ePrimary)
+           .setCommandBufferCount(static_cast<uint32_t>(commandBuffers.size()));
 
   try
   {
@@ -858,15 +994,19 @@ void HelloTriangleApplication::createCommandBuffers()
 
     vk::RenderPassBeginInfo renderPassInfo;
     renderPassInfo.setRenderPass(renderPass)
-      .setFramebuffer(swapChainFramebuffers[i])
-      .setRenderArea(vk::Rect2D({ 0,0 }, swapChainExtent))
-      .setClearValueCount(1)
-      .setPClearValues(&clearColor);
+                  .setFramebuffer(swapChainFramebuffers[i])
+                  .setRenderArea(vk::Rect2D({ 0,0 }, swapChainExtent))
+                  .setClearValueCount(1)
+                  .setPClearValues(&clearColor);
 
     commandBuffers[i].beginRenderPass(&renderPassInfo, vk::SubpassContents::eInline);
 
     commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
-    commandBuffers[i].draw(3, 1, 0, 0);
+
+    vk::Buffer vertexBuffers[] = { vertexBuffer };
+    vk::DeviceSize offsets[] = { 0 };
+    commandBuffers[i].bindVertexBuffers(0, 1, vertexBuffers, offsets);
+    commandBuffers[i].draw(static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 
     commandBuffers[i].endRenderPass();
     commandBuffers[i].end();
@@ -998,6 +1138,8 @@ void HelloTriangleApplication::cleanup()
   if (imageAvailableSemaphore) device.destroySemaphore(imageAvailableSemaphore);
   if (renderFinishedSemaphore) device.destroySemaphore(renderFinishedSemaphore);
   if (commandPool) device.destroyCommandPool(commandPool);  
+  if (vertexBuffer) device.destroyBuffer(vertexBuffer);
+  if (vertexBufferMemory) device.freeMemory(vertexBufferMemory);
   if (device) device.destroy();
   if (callback) removeDebugCallback();
   if (surface) instance.destroySurfaceKHR(surface);

@@ -33,6 +33,7 @@
     <ClInclude Include="ExceptionMessage.hpp" />
     <ClInclude Include="HelloTriangleApplication.hpp" />
     <ClInclude Include="UnrecoverableException.hpp" />
+    <ClInclude Include="Vertex.hpp" />
     <ClInclude Include="VulkanExtensions.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -125,7 +126,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\VulkanWork\glm;C:\local\glfw-3.2.1\include;C:\VulkanSDK\1.0.61.1\Include;$(SolutionDir)\..\..\Vulkan-Docs\src;$(SolutionDir)\..\..\vkel;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\glm;C:\local\glfw-3.2.1\include;C:\VulkanSDK\1.0.61.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
@@ -163,7 +164,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\VulkanWork\glm;C:\local\glfw-3.2.1\include;C:\VulkanSDK\1.0.61.1\Include;$(SolutionDir)\..\..\Vulkan-Docs\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\glm;C:\local\glfw-3.2.1\include;C:\VulkanSDK\1.0.61.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>

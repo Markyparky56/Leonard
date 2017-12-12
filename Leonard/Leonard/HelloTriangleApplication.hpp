@@ -6,6 +6,8 @@
 
 #include "UnrecoverableException.hpp"
 
+#include "Vertex.hpp"
+
 #include <iostream>
 #include <stdexcept>
 #include <functional>
@@ -71,8 +73,11 @@ private:
   void pickPhysicalDevice();
   bool isDeviceSuitable(vk::PhysicalDevice device);
   QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device);
+  uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
   void createLogicalDevice();
   void createSurface();
+  void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags, vk::MemoryPropertyFlags, vk::Buffer &buffer, vk::DeviceMemory &bufferMemory);
+  void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size);
   bool checkDeviceExtensionSupport(vk::PhysicalDevice device);
   SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice device);
   vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &availableFormats);
@@ -85,10 +90,13 @@ private:
   void createRenderPass();
   void createFramebuffers();
   void createCommandPool();
+  void createVertexBuffer();
   void createCommandBuffers();
   void createSemaphores();
   void recreateSwapChain();
   void cleanupSwapChain();
+
+  void setupRenderables();
 
   void mainLoop();
   void drawFrame();
@@ -120,6 +128,11 @@ private:
   std::vector<vk::CommandBuffer> commandBuffers;
   vk::Semaphore imageAvailableSemaphore;
   vk::Semaphore renderFinishedSemaphore;
+  vk::Buffer vertexBuffer;
+  vk::DeviceMemory vertexBufferMemory;
+
+  // Stuff to render
+  std::vector<Vertex> vertices;
 
   const std::vector<const char*> validationLayers = 
   {
