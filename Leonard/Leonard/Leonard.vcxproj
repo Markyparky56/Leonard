@@ -32,6 +32,7 @@
   <ItemGroup>
     <ClInclude Include="ExceptionMessage.hpp" />
     <ClInclude Include="HelloTriangleApplication.hpp" />
+    <ClInclude Include="UniformBufferObject.hpp" />
     <ClInclude Include="UnrecoverableException.hpp" />
     <ClInclude Include="Vertex.hpp" />
     <ClInclude Include="VulkanExtensions.hpp" />

@@ -4,9 +4,14 @@
 //#include <ext_loader\vulkan_ext.h>
 #include <GLFW/glfw3.h> // TODO: Replace GLFW with own window manager
 
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "UnrecoverableException.hpp"
 
 #include "Vertex.hpp"
+#include "UniformBufferObject.hpp"
 
 #include <iostream>
 #include <stdexcept>
@@ -16,6 +21,7 @@
 #include <set>
 #include <algorithm>
 #include <fstream>
+#include <chrono>
 
 static std::vector<char> readBinaryFile(const std::string &filename)
 {
@@ -85,12 +91,17 @@ private:
   vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities);
   void createSwapChain();
   void createImageViews();
+  void createDescriptorSetLayout();
   void createGraphicsPipeline();
   vk::ShaderModule createShaderModule(const std::vector<char> &code);
   void createRenderPass();
   void createFramebuffers();
   void createCommandPool();
   void createVertexBuffer();
+  void createIndexBuffer();
+  void createUniformBuffer();
+  void createDescriptorPool();
+  void createDescriptorSet();
   void createCommandBuffers();
   void createSemaphores();
   void recreateSwapChain();
@@ -99,6 +110,7 @@ private:
   void setupRenderables();
 
   void mainLoop();
+  void updateUniformBuffer();
   void drawFrame();
 
   void cleanup();
@@ -120,19 +132,28 @@ private:
   vk::Format swapChainImageFormat;
   vk::Extent2D swapChainExtent;
   std::vector<vk::ImageView> swapChainImageViews;
+  vk::DescriptorSetLayout descriptorSetLayout;
   vk::PipelineLayout pipelineLayout;
   vk::RenderPass renderPass;
   vk::Pipeline graphicsPipeline;
   std::vector<vk::Framebuffer> swapChainFramebuffers;
+  vk::DescriptorPool descriptorPool;
+  vk::DescriptorSet descriptorSet;
   vk::CommandPool commandPool;
   std::vector<vk::CommandBuffer> commandBuffers;
   vk::Semaphore imageAvailableSemaphore;
   vk::Semaphore renderFinishedSemaphore;
+
   vk::Buffer vertexBuffer;
   vk::DeviceMemory vertexBufferMemory;
+  vk::Buffer indexBuffer;
+  vk::DeviceMemory indexBufferMemory;
+  vk::Buffer uniformBuffer;
+  vk::DeviceMemory uniformBufferMemory;
 
   // Stuff to render
   std::vector<Vertex> vertices;
+  std::vector<uint16_t> indices;
 
   const std::vector<const char*> validationLayers = 
   {

@@ -14,10 +14,23 @@ void HelloTriangleApplication::run()
 
 void HelloTriangleApplication::setupRenderables()
 {
+  // Rainbow Triangle Vertices
+  /*vertices = {
+    {{ 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{ 0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}}
+  };*/
+  // Square Vertices
   vertices = {
-    {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{ 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{ 0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}},
+    {{-0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}}
+  };
+
+  // Square Indices
+  indices = {
+    0, 1, 2, 2, 3, 0
   };
 }
 
@@ -51,10 +64,15 @@ void HelloTriangleApplication::initVulkan()
   createSwapChain();
   createImageViews();
   createRenderPass();
+  createDescriptorSetLayout();
   createGraphicsPipeline();
   createFramebuffers();
   createCommandPool();
   createVertexBuffer();
+  createIndexBuffer();
+  createUniformBuffer();
+  createDescriptorPool();
+  createDescriptorSet();
   createCommandBuffers();
   createSemaphores();
 }
@@ -532,8 +550,8 @@ void HelloTriangleApplication::copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBu
   
   vk::BufferCopy copyRegion = {};
   copyRegion.setSrcOffset(0)
-    .setDstOffset(0)
-    .setSize(size);
+            .setDstOffset(0)
+            .setSize(size);
   commandBuffer.copyBuffer(srcBuffer, dstBuffer, 1, &copyRegion);
 
   commandBuffer.end();
@@ -658,6 +676,30 @@ void HelloTriangleApplication::createImageViews()
   }
 }
 
+void HelloTriangleApplication::createDescriptorSetLayout()
+{
+  vk::DescriptorSetLayoutBinding uboLayoutBinding = {};
+  uboLayoutBinding.setBinding(0)
+                  .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+                  .setDescriptorCount(1)
+                  .setStageFlags(vk::ShaderStageFlagBits::eVertex)
+                  .setPImmutableSamplers(nullptr);
+
+  vk::DescriptorSetLayoutCreateInfo layoutInfo = {};
+  layoutInfo.setBindingCount(1)
+    .setPBindings(&uboLayoutBinding);
+
+  try
+  {
+    descriptorSetLayout = device.createDescriptorSetLayout(layoutInfo);
+  }
+  catch (std::system_error const &e)
+  {
+    cleanup();
+    throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to create descriptor set layout!"), e);
+  }
+}
+
 void HelloTriangleApplication::createGraphicsPipeline()
 {
   vk::ShaderModule vertShaderModule;
@@ -721,7 +763,7 @@ void HelloTriangleApplication::createGraphicsPipeline()
             .setPolygonMode(vk::PolygonMode::eFill)
             .setLineWidth(1.f)
             .setCullMode(vk::CullModeFlagBits::eBack)
-            .setFrontFace(vk::FrontFace::eClockwise)
+            .setFrontFace(vk::FrontFace::eCounterClockwise)
             .setDepthBiasEnable(false)
             .setDepthBiasConstantFactor(0.f)
             .setDepthBiasClamp(0.f)
@@ -774,8 +816,8 @@ void HelloTriangleApplication::createGraphicsPipeline()
 
   
   vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
-  pipelineLayoutInfo.setSetLayoutCount(0)
-                    .setPSetLayouts(nullptr)
+  pipelineLayoutInfo.setSetLayoutCount(1)
+                    .setPSetLayouts(&descriptorSetLayout)
                     .setPushConstantRangeCount(0)
                     .setPPushConstantRanges(0);
   
@@ -963,6 +1005,98 @@ void HelloTriangleApplication::createVertexBuffer()
   device.freeMemory(stagingBufferMemory);
 }
 
+void HelloTriangleApplication::createIndexBuffer()
+{
+  vk::DeviceSize bufferSize = sizeof(uint16_t) * indices.size();
+
+  vk::Buffer stagingBuffer;
+  vk::DeviceMemory stagingBufferMemory;
+  createBuffer( bufferSize
+              , vk::BufferUsageFlagBits::eTransferSrc
+              , vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+              , stagingBuffer, stagingBufferMemory);
+
+  void *data;
+  data = device.mapMemory(stagingBufferMemory, 0, bufferSize);
+  memcpy(data, indices.data(), static_cast<size_t>(bufferSize));
+  device.unmapMemory(stagingBufferMemory);
+
+  createBuffer( bufferSize
+              , vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer
+              , vk::MemoryPropertyFlagBits::eDeviceLocal
+              , indexBuffer, indexBufferMemory);
+
+  copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+
+  device.destroyBuffer(stagingBuffer);
+  device.freeMemory(stagingBufferMemory);
+}
+
+void HelloTriangleApplication::createUniformBuffer()
+{
+  vk::DeviceSize bufferSize = sizeof(UniformBufferObject);
+  createBuffer( bufferSize
+              , vk::BufferUsageFlagBits::eUniformBuffer
+              , vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+              , uniformBuffer, uniformBufferMemory);
+}
+
+void HelloTriangleApplication::createDescriptorPool()
+{
+  vk::DescriptorPoolSize poolSize = {};
+  poolSize.setDescriptorCount(1)
+          .setType(vk::DescriptorType::eUniformBuffer);
+
+  vk::DescriptorPoolCreateInfo poolInfo = {};
+  poolInfo.setPoolSizeCount(1)
+          .setPPoolSizes(&poolSize)
+          .setMaxSets(1);
+
+  try
+  {
+    descriptorPool = device.createDescriptorPool(poolInfo);
+  }
+  catch (std::system_error const &e)
+  {
+    throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to create descriptor pool!"), e);
+  }
+}
+
+void HelloTriangleApplication::createDescriptorSet()
+{
+  vk::DescriptorSetLayout layouts[] = { descriptorSetLayout };
+  vk::DescriptorSetAllocateInfo allocInfo = {};
+  allocInfo.setDescriptorPool(descriptorPool)
+    .setDescriptorSetCount(1)
+    .setPSetLayouts(layouts);
+
+  try
+  {
+    descriptorSet = device.allocateDescriptorSets(allocInfo)[0];
+  }
+  catch (std::system_error const &e)
+  {
+    throw UnrecoverableVulkanException(CreateBasicExceptionMessage("Failed to allocate descriptor set!"), e);
+  }
+
+  vk::DescriptorBufferInfo bufferInfo = {};
+  bufferInfo.setBuffer(uniformBuffer)
+    .setOffset(0)
+    .setRange(sizeof(UniformBufferObject));
+
+  vk::WriteDescriptorSet descriptorWrite = {};
+  descriptorWrite.setDstSet(descriptorSet)
+                 .setDstBinding(0)
+                 .setDstArrayElement(0)
+                 .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+                 .setDescriptorCount(1)
+                 .setPBufferInfo(&bufferInfo)
+                 .setPImageInfo(nullptr)
+                 .setPTexelBufferView(nullptr);
+
+  device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
+}
+
 void HelloTriangleApplication::createCommandBuffers()
 {
   commandBuffers.resize(swapChainFramebuffers.size());
@@ -1006,7 +1140,9 @@ void HelloTriangleApplication::createCommandBuffers()
     vk::Buffer vertexBuffers[] = { vertexBuffer };
     vk::DeviceSize offsets[] = { 0 };
     commandBuffers[i].bindVertexBuffers(0, 1, vertexBuffers, offsets);
-    commandBuffers[i].draw(static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+    commandBuffers[i].bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint16);
+    commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+    commandBuffers[i].drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
     commandBuffers[i].endRenderPass();
     commandBuffers[i].end();
@@ -1059,10 +1195,32 @@ void HelloTriangleApplication::mainLoop()
   while (!glfwWindowShouldClose(window))
   {
     glfwPollEvents();
+
+    updateUniformBuffer();
     drawFrame();
   }
 
   device.waitIdle();
+}
+
+void HelloTriangleApplication::updateUniformBuffer()
+{
+  static auto startTime = std::chrono::high_resolution_clock::now();
+
+  auto currentTime = std::chrono::high_resolution_clock::now();
+  float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+  UniformBufferObject ubo = {};
+  ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+  ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+  ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / static_cast<float>(swapChainExtent.height), 0.1f, 10.0f);
+  // UnInvert Y coords
+  ubo.proj[1][1] *= -1;
+
+  void *data;
+  data = device.mapMemory(uniformBufferMemory, 0, sizeof(ubo));
+  memcpy(data, &ubo, sizeof(ubo));
+  device.unmapMemory(uniformBufferMemory);
 }
 
 void HelloTriangleApplication::drawFrame()
@@ -1135,17 +1293,21 @@ void HelloTriangleApplication::cleanup()
 {
   cleanupSwapChain();
 
-  if (imageAvailableSemaphore) device.destroySemaphore(imageAvailableSemaphore);
-  if (renderFinishedSemaphore) device.destroySemaphore(renderFinishedSemaphore);
-  if (commandPool) device.destroyCommandPool(commandPool);  
-  if (vertexBuffer) device.destroyBuffer(vertexBuffer);
-  if (vertexBufferMemory) device.freeMemory(vertexBufferMemory);
-  if (device) device.destroy();
-  if (callback) removeDebugCallback();
-  if (surface) instance.destroySurfaceKHR(surface);
-  if (instance) instance.destroy();
-
-  //vkelUninit();
+  if (imageAvailableSemaphore)  device.destroySemaphore(imageAvailableSemaphore);
+  if (renderFinishedSemaphore)  device.destroySemaphore(renderFinishedSemaphore);
+  if (commandPool)              device.destroyCommandPool(commandPool);  
+  if (vertexBuffer)             device.destroyBuffer(vertexBuffer);
+  if (vertexBufferMemory)       device.freeMemory(vertexBufferMemory);
+  if (indexBuffer)              device.destroyBuffer(indexBuffer);
+  if (indexBufferMemory)        device.freeMemory(indexBufferMemory);
+  if (uniformBuffer)            device.destroyBuffer(uniformBuffer);
+  if (uniformBufferMemory)      device.freeMemory(uniformBufferMemory);
+  if (descriptorSetLayout)      device.destroyDescriptorSetLayout(descriptorSetLayout);
+  if (descriptorPool)           device.destroyDescriptorPool(descriptorPool);
+  if (device)                   device.destroy();
+  if (callback)                 removeDebugCallback();
+  if (surface)                  instance.destroySurfaceKHR(surface);
+  if (instance)                 instance.destroy();
 
   glfwDestroyWindow(window);
   glfwTerminate();
