@@ -1,0 +1,2 @@
+%VULKAN_SDK%\Bin32\glslangValidator.exe --target-env vulkan1.0 -g -o helloTriangle.vert.spv helloTriangle.vert
+%VULKAN_SDK%\Bin32\glslangValidator.exe --target-env vulkan1.0 -g -o helloTriangle.frag.spv helloTriangle.frag

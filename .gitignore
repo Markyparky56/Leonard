@@ -244,3 +244,8 @@ ModelManifest.xml
 # FAKE - F# Make
 .fake/
 *.spv
+
+# GLFW exceptions
+!glfw3.dll
+!glfw3.lib
+!glfw3dll.lib
