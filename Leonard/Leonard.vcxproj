@@ -84,13 +84,13 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../External/imgui;../External/VulkanMemoryAllocator/src;../External/glm;../External/GLFW/include;../External/Vookoo/include;$(VULKAN_SDK)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NOMINMAX;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../External/imgui;../External/VulkanMemoryAllocator/src;../External/glm;../External/GLFW/include;../External/Vookoo/include;$(VULKAN_SDK)/include;../External/FrameGraph;../External/FrameGraph/extensions</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;WIN32_LEAN_AND_MEAN;WIN32;_WINDOWS;COMPILER_MSVC;FG_STD_VARIANT;FG_STD_STRINGVIEW;FG_STD_OPTIONAL;FG_STD_FILESYSTEM;FG_CACHE_LINE=std::hardware_destructive_interference_size;ENABLE_OPT;ENABLE_HLSL;AMD_EXTENSIONS;NV_EXTENSIONS;FG_ENABLE_GLSLANG;FG_ENABLE_VULKAN_MEMORY_ALLOCATOR;FG_ENABLE_GLFW;FG_ENABLE_ASSIMP;FG_ENABLE_GLM;FG_ENABLE_DEVIL;PLATFORM_WINDOWS;PLATFORM_NAME="Windows";PLATFORM_CPU_NAME="AMD64";PLATFORM_BITS=64;_DEBUG;_ITERATOR_DEBUG_LEVEL=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>../External/GLFW/lib-vc2017/;$(VULKAN_SDK)/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../External/GLFW/lib-vc2017/;$(VULKAN_SDK)/lib;../External/FrameGraph/nim/$(Configuration)/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;FrameGraph.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -115,15 +115,15 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../External/imgui;../External/VulkanMemoryAllocator/src;../External/glm;../External/GLFW/include;../External/Vookoo/include;$(VULKAN_SDK)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NOMINMAX;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../External/imgui;../External/VulkanMemoryAllocator/src;../External/glm;../External/GLFW/include;../External/Vookoo/include;$(VULKAN_SDK)/include;../External/FrameGraph;../External/FrameGraph/extensions</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;WIN32_LEAN_AND_MEAN;WIN32;_WINDOWS;COMPILER_MSVC;FG_STD_VARIANT;FG_STD_STRINGVIEW;FG_STD_OPTIONAL;FG_STD_FILESYSTEM;FG_CACHE_LINE=std::hardware_destructive_interference_size;ENABLE_OPT;ENABLE_HLSL;AMD_EXTENSIONS;NV_EXTENSIONS;FG_ENABLE_GLSLANG;FG_ENABLE_VULKAN_MEMORY_ALLOCATOR;FG_ENABLE_GLFW;FG_ENABLE_ASSIMP;FG_ENABLE_GLM;FG_ENABLE_DEVIL;PLATFORM_WINDOWS;PLATFORM_NAME="Windows";PLATFORM_CPU_NAME="AMD64";PLATFORM_BITS=64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>../External/GLFW/lib-vc2017/;$(VULKAN_SDK)/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../External/GLFW/lib-vc2017/;$(VULKAN_SDK)/lib;../External/FrameGraph/nim/$(Configuration)/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;FrameGraph.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
