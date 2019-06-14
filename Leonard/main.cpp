@@ -1,10 +1,9 @@
 #include <vku/vku_framework.hpp>
 #include <vku/vku.hpp>
-#include <framegraph/FG.h>
-#include <framework/Window/WindowGLFW.h>
-#include <framework/Vulkan/VulkanDeviceExt.h>
-#include <pipeline_compiler/VPipelineCompiler.h>
 #include <glm/glm.hpp>
+#include "TriangleApp.hpp"
+
+TriangleApp app;
 
 const std::string BINARY_DIR = "../../Resources/";
 
@@ -41,7 +40,7 @@ int main()
       std::cout << "Failed to create Vookoo framework" << std::endl;
       return EXIT_FAILURE;
     }
-
+    
     // Create device
     vk::Device device = fw.device();
 
@@ -115,64 +114,6 @@ int main()
 
     device.waitIdle();
     glfwDestroyWindow(glfwWindow);
-  }
-
-  {
-    std::unique_ptr<FGC::IWindow> window = std::make_unique<FGC::WindowGLFW>();
-    FGC::VulkanDeviceExt vulkan;
-
-    window->Create({ 800, 600 }, "Hi, I'm Leonard");
-
-    vulkan.Create(window->GetVulkanSurface(), "Leonard", "Leonard", VK_API_VERSION_1_1
-      , "",
-      {{ VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_SPARSE_BINDING_BIT | FG::VK_QUEUE_PRESENT_BIT, 0.0f },
-       { VK_QUEUE_COMPUTE_BIT,  0.0f },
-       { VK_QUEUE_TRANSFER_BIT, 0.0f }},
-      FG::VulkanDevice::GetRecomendedInstanceLayers(),
-      FG::VulkanDevice::GetRecomendedInstanceExtensions(),
-      FG::VulkanDevice::GetAllDeviceExtensions()
-    );
-
-    vulkan.CreateDebugUtilsCallback(FGC::DebugUtilsMessageSeverity_All);
-
-    // Setup device desc
-    FG::VulkanDeviceInfo vulkanInfo;
-    vulkanInfo.instance = FGC::BitCast<FG::InstanceVk_t>(vulkan.GetVkInstance());
-    vulkanInfo.physicalDevice = FGC::BitCast<FG::PhysicalDeviceVk_t>(vulkan.GetVkPhysicalDevice());
-    vulkanInfo.device = FGC::BitCast<FG::DeviceVk_t>(vulkan.GetVkDevice());
-
-    for (auto & q : vulkan.GetVkQueues())
-    {
-      FG::VulkanDeviceInfo::QueueInfo queue;
-      queue.handle = FGC::BitCast<FG::QueueVk_t>(q.handle);
-      queue.familyFlags = FGC::BitCast<FG::QueueFlagsVk_t>(q.flags);
-      queue.familyIndex = q.familyIndex;
-      queue.priority = q.priority;
-
-      vulkanInfo.queues.push_back(queue);
-    }
-
-    FG::VulkanSwapchainCreateInfo swapchainInfo;
-    swapchainInfo.surface = FGC::BitCast<FG::SurfaceVk_t>(vulkan.GetVkSurface());
-    swapchainInfo.surfaceSize = window->GetSize();
-
-    FG::FrameGraph frameGraph = FG::IFrameGraph::CreateFrameGraph(vulkanInfo);
-    FG::SwapchainID swapchain = frameGraph->CreateSwapchain(swapchainInfo, FG::Default, "Window");
-
-    std::shared_ptr<FG::VPipelineCompiler> compiler = std::make_shared<FG::VPipelineCompiler>(vulkanInfo.physicalDevice, vulkanInfo.device);
-    compiler->SetCompilationFlags(FG::EShaderCompilationFlags::AutoMapLocations);
-
-    frameGraph->AddPipelineCompiler(compiler);
-
-    FG::GraphicsPipelineDesc ppln;
-
-    FGC::String vertSrc, fragSrc;
-    vertSrc = loadShaderSrc(BINARY_DIR + "helloTriangle.vert");
-    fragSrc = loadShaderSrc(BINARY_DIR + "helloTriangle.frag");
-    ppln.AddShader(FG::EShader::Vertex, FG::EShaderLangFormat::GLSL_450, "main", vertSrc.c_str());
-    ppln.AddShader(FG::EShader::Vertex, FG::EShaderLangFormat::GLSL_450, "main", fragSrc.c_str());
-
-
   }
 
   glfwTerminate();

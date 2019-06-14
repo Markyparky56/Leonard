@@ -22,6 +22,9 @@
     <Filter Include="Source Files\vma">
       <UniqueIdentifier>{5069290a-9817-4058-a23b-5b9839b7b5f8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Leonard">
+      <UniqueIdentifier>{ef13799a-df88-40df-82ad-666e758fff8b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -48,6 +51,12 @@
     <ClCompile Include="vma_impl.cpp">
       <Filter>Source Files\vma</Filter>
     </ClCompile>
+    <ClCompile Include="AppBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TriangleApp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\External\imgui\imconfig.h">
@@ -73,6 +82,15 @@
     </ClInclude>
     <ClInclude Include="..\External\imgui\examples\imgui_impl_vulkan.h">
       <Filter>Header Files\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="AppBase.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TriangleApp.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LeonardRenderer.hpp">
+      <Filter>Header Files\Leonard</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

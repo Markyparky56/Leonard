@@ -42,14 +42,14 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -84,13 +84,13 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../External/imgui;../External/VulkanMemoryAllocator/src;../External/glm;../External/GLFW/include;../External/Vookoo/include;$(VULKAN_SDK)/include;../External/FrameGraph;../External/FrameGraph/extensions</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NOMINMAX;WIN32_LEAN_AND_MEAN;WIN32;_WINDOWS;COMPILER_MSVC;FG_STD_VARIANT;FG_STD_STRINGVIEW;FG_STD_OPTIONAL;FG_STD_FILESYSTEM;FG_CACHE_LINE=std::hardware_destructive_interference_size;ENABLE_OPT;ENABLE_HLSL;AMD_EXTENSIONS;NV_EXTENSIONS;FG_ENABLE_GLSLANG;FG_ENABLE_VULKAN_MEMORY_ALLOCATOR;FG_ENABLE_GLFW;FG_ENABLE_ASSIMP;FG_ENABLE_GLM;FG_ENABLE_DEVIL;PLATFORM_WINDOWS;PLATFORM_NAME="Windows";PLATFORM_CPU_NAME="AMD64";PLATFORM_BITS=64;_DEBUG;_ITERATOR_DEBUG_LEVEL=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../External/imgui;../External/VulkanMemoryAllocator/src;../External/glm;../External/GLFW/include;../External/Vookoo/include;$(VULKAN_SDK)/include;../External/fg/include;../External/EASTL/include;../External/EASTL/test/packages/EAAssert/include;../External/EASTL/test/packages/EABase/include/Common;../External/EASTL/test/packages/EAMain/include;../External/EASTL/test/packages/EAStdC/include;../External/EASTL/test/packages/EATest/include;../External/EASTL/test/packages/EAThread/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;WIN32_LEAN_AND_MEAN;WIN32;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>../External/GLFW/lib-vc2017/;$(VULKAN_SDK)/lib;../External/FrameGraph/nim/$(Configuration)/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;FrameGraph.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../External/GLFW/lib-vc2017/;$(VULKAN_SDK)/lib;$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;EASTL.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -115,15 +115,15 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../External/imgui;../External/VulkanMemoryAllocator/src;../External/glm;../External/GLFW/include;../External/Vookoo/include;$(VULKAN_SDK)/include;../External/FrameGraph;../External/FrameGraph/extensions</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NOMINMAX;WIN32_LEAN_AND_MEAN;WIN32;_WINDOWS;COMPILER_MSVC;FG_STD_VARIANT;FG_STD_STRINGVIEW;FG_STD_OPTIONAL;FG_STD_FILESYSTEM;FG_CACHE_LINE=std::hardware_destructive_interference_size;ENABLE_OPT;ENABLE_HLSL;AMD_EXTENSIONS;NV_EXTENSIONS;FG_ENABLE_GLSLANG;FG_ENABLE_VULKAN_MEMORY_ALLOCATOR;FG_ENABLE_GLFW;FG_ENABLE_ASSIMP;FG_ENABLE_GLM;FG_ENABLE_DEVIL;PLATFORM_WINDOWS;PLATFORM_NAME="Windows";PLATFORM_CPU_NAME="AMD64";PLATFORM_BITS=64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../External/imgui;../External/VulkanMemoryAllocator/src;../External/glm;../External/GLFW/include;../External/Vookoo/include;$(VULKAN_SDK)/include;../External/fg/include;../External/EASTL/include;../External/EASTL/test/packages/EAAssert/include;../External/EASTL/test/packages/EABase/include/Common;../External/EASTL/test/packages/EAMain/include;../External/EASTL/test/packages/EAStdC/include;../External/EASTL/test/packages/EATest/include;../External/EASTL/test/packages/EAThread/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;WIN32_LEAN_AND_MEAN;WIN32;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>../External/GLFW/lib-vc2017/;$(VULKAN_SDK)/lib;../External/FrameGraph/nim/$(Configuration)/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;FrameGraph.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../External/GLFW/lib-vc2017/;$(VULKAN_SDK)/lib;$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;EASTL.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -151,9 +151,11 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="AppBase.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="TriangleApp.cpp" />
     <ClCompile Include="vma_impl.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
   </ItemGroup>
@@ -166,6 +168,9 @@
     <ClInclude Include="..\External\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\External\imgui\imstb_textedit.h" />
     <ClInclude Include="..\External\imgui\imstb_truetype.h" />
+    <ClInclude Include="AppBase.hpp" />
+    <ClInclude Include="LeonardRenderer.hpp" />
+    <ClInclude Include="TriangleApp.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Resources\helloCompute.comp" />
