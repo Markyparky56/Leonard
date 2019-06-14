@@ -92,6 +92,9 @@
     <ClInclude Include="LeonardRenderer.hpp">
       <Filter>Header Files\Leonard</Filter>
     </ClInclude>
+    <ClInclude Include="vku_vma.hpp">
+      <Filter>Header Files\Leonard</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Resources\helloCompute.comp">

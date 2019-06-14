@@ -85,7 +85,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>../External/imgui;../External/VulkanMemoryAllocator/src;../External/glm;../External/GLFW/include;../External/Vookoo/include;$(VULKAN_SDK)/include;../External/fg/include;../External/EASTL/include;../External/EASTL/test/packages/EAAssert/include;../External/EASTL/test/packages/EABase/include/Common;../External/EASTL/test/packages/EAMain/include;../External/EASTL/test/packages/EAStdC/include;../External/EASTL/test/packages/EATest/include;../External/EASTL/test/packages/EAThread/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NOMINMAX;WIN32_LEAN_AND_MEAN;WIN32;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;WIN32_LEAN_AND_MEAN;WIN32;_WINDOWS;GLM_FORCE_RADIANS;GLM_FORCE_DEPTH_ZERO_TO_ONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -116,7 +116,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>../External/imgui;../External/VulkanMemoryAllocator/src;../External/glm;../External/GLFW/include;../External/Vookoo/include;$(VULKAN_SDK)/include;../External/fg/include;../External/EASTL/include;../External/EASTL/test/packages/EAAssert/include;../External/EASTL/test/packages/EABase/include/Common;../External/EASTL/test/packages/EAMain/include;../External/EASTL/test/packages/EAStdC/include;../External/EASTL/test/packages/EATest/include;../External/EASTL/test/packages/EAThread/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NOMINMAX;WIN32_LEAN_AND_MEAN;WIN32;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;WIN32_LEAN_AND_MEAN;WIN32;_WINDOWS;GLM_FORCE_RADIANS;GLM_FORCE_DEPTH_ZERO_TO_ONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -171,6 +171,7 @@
     <ClInclude Include="AppBase.hpp" />
     <ClInclude Include="LeonardRenderer.hpp" />
     <ClInclude Include="TriangleApp.hpp" />
+    <ClInclude Include="vku_vma.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Resources\helloCompute.comp" />

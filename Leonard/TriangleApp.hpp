@@ -7,6 +7,7 @@
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 #include <vulkan/vulkan.hpp>
+#include "LeonardRenderer.hpp"
 
 class TriangleApp : public AppBase
 {
@@ -29,6 +30,8 @@ public:
   } properties;
 
 private:
+  LeonardRenderer renderer;
+
   GLFWwindow * window;
   vk::Device device;
 
