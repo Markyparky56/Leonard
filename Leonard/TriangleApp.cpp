@@ -1,4 +1,6 @@
 #include "TriangleApp.hpp"
+#include <vku/vku.hpp>
+#include <glm/glm.hpp>
 
 bool TriangleApp::Init()
 {

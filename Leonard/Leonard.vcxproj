@@ -177,6 +177,9 @@
     <None Include="..\Resources\helloTriangle.frag" />
     <None Include="..\Resources\helloTriangle.vert" />
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\External\EASTL\doc\EASTL.natvis" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

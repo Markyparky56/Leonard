@@ -104,4 +104,9 @@
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\External\EASTL\doc\EASTL.natvis">
+      <Filter>Resource Files</Filter>
+    </Natvis>
+  </ItemGroup>
 </Project>
